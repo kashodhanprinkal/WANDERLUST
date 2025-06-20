@@ -1,0 +1,133 @@
+import uploadOnCloudinary from "../config/cloudinary.js";
+import Listing from "../model/listing.model.js";
+import User from "../model/user.model.js";
+
+export const addListing = async (req, res) => {
+  try {
+    console.log("📦 req.body:", req.body);
+    console.log("🖼️ req.files:", req.files);
+    console.log("🙋‍♂️ userId:", req.userId);
+
+    const host = req.userId;
+    const { title, description, rent, city, landmark, category } = req.body;
+
+    const image1 = req.files?.image1?.[0] ? await uploadOnCloudinary(req.files.image1[0].path) : null;
+    const image2 = req.files?.image2?.[0] ? await uploadOnCloudinary(req.files.image2[0].path) : null;
+    const image3 = req.files?.image3?.[0] ? await uploadOnCloudinary(req.files.image3[0].path) : null;
+    const image4 = req.files?.image4?.[0] ? await uploadOnCloudinary(req.files.image4[0].path) : null;
+    const image5 = req.files?.image5?.[0] ? await uploadOnCloudinary(req.files.image5[0].path) : null;
+
+    const listing = await Listing.create({
+      title,
+      description,
+      rent,
+      city,
+      landmark,
+      category,
+      image1: image1 ? image1.url : null,
+      image2: image2 ? image2.url : null,
+      image3: image3 ? image3.url : null,
+      image4: image4 ? image4.url : null,
+      image5: image5 ? image5.url : null,
+      host,
+    });
+
+    const user = await User.findByIdAndUpdate(
+      host,
+      { $push: { listing: listing._id } },
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(400).json({ message: "User not found" });
+    }
+
+    res.status(201).json(listing);
+  } catch (error) {
+    console.error("❌ Error in addListing:", error);
+    res.status(500).json({ message: `Add listing failed: ${error.message}` });
+  }
+};
+
+export const getListing =async (req , res)=>{
+  try {
+    let listing = await Listing.find().sort({createdAt:-1})
+    res.status(200).json(listing)
+  } catch (error) {
+    res.status(500).json({message:'getListing error $(error}'})
+  }
+}
+
+export const findListing = async(req,res)=>{
+  try {
+    let {id} = req.params
+    let listing = await Listing.findById(id)
+    if(!listing){
+      res.status(404).json({message:"listing not found"})
+    }
+    res.status(200).json(listing)
+  } catch (error) {
+    res.status(500).json('findListing error ${error}')
+    
+  }
+}
+
+export const updateListing = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, description, rent, city, landmark, category } = req.body;
+
+    // ✅ Fetch existing listing first
+    const existingListing = await Listing.findById(id);
+    if (!existingListing) {
+      return res.status(404).json({ message: "Listing not found" });
+    }
+
+    // ✅ Upload new images if provided, else keep existing
+    const image1 = req.files?.image1?.[0] ? await uploadOnCloudinary(req.files.image1[0].path) : null;
+    const image2 = req.files?.image2?.[0] ? await uploadOnCloudinary(req.files.image2[0].path) : null;
+    const image3 = req.files?.image3?.[0] ? await uploadOnCloudinary(req.files.image3[0].path) : null;
+    const image4 = req.files?.image4?.[0] ? await uploadOnCloudinary(req.files.image4[0].path) : null;
+    const image5 = req.files?.image5?.[0] ? await uploadOnCloudinary(req.files.image5[0].path) : null;
+
+    // ✅ Prepare update payload
+    const updatedData = {
+      title,
+      description,
+      rent,
+      city,
+      landmark,
+      category,
+      image1: image1 ? image1.url : existingListing.image1,
+      image2: image2 ? image2.url : existingListing.image2,
+      image3: image3 ? image3.url : existingListing.image3,
+      image4: image4 ? image4.url : existingListing.image4,
+      image5: image5 ? image5.url : existingListing.image5,
+    };
+
+    const updatedListing = await Listing.findByIdAndUpdate(id, updatedData, { new: true });
+
+    return res.status(200).json({ message: "Listing updated successfully", listing: updatedListing });
+  } catch (error) {
+    console.error("❌ Update error:", error);
+    return res.status(500).json({ message: `Update failed: ${error.message}` });
+  }
+};
+
+export const deleteListing = async (req, res) => {
+
+  try {
+    let {id} = req.params
+    let listing = await Listing.findByIdAndDelete(id)
+    let user = await User.findByIdAndUpdate(listing.host,{
+      $pull:{listing:listing._id}
+    },{new:true})
+    if(!user){
+      return res.status(400).json({message:"user not found"})
+    }
+    return res.status(201).json({message:"listing deleted"})
+  } catch (error) {
+    return res.status(500).json({message:'delete listing error ${error}'})
+  }
+}
+
