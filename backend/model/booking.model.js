@@ -19,7 +19,7 @@ const bookingSchema =new mongoose.Schema({
     },
      status:{
         type:String,
-        enum:["booked","cancel","done"],
+        enum:["booked","cancelled","done"],
         default:"booked"
     },
      checkIn:{
@@ -33,7 +33,13 @@ const bookingSchema =new mongoose.Schema({
     totalRent:{
         type:Number,
         required:true
-    }
+    },
+    cancelledBy: {
+  type: String,
+  enum: ['host', 'guest', null],
+  default: null
+}
+
 },{timestamps:true})
 
 const Booking = mongoose.model("Booking", bookingSchema)

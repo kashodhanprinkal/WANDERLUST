@@ -4,15 +4,20 @@ import {
   createBooking,
   cancelBooking,
   updateBookingStatuses,
-} from "../controller/booking.controller.js";
+  getMyBookings, // ✅ Import this
+  getUnavailableDates
+} from "../controller/booking.controller.js"; // 👈 Make sure it's exported there
 
 const bookingRouter = express.Router();
 
-// ✅ Routes
+// ✅ Booking Routes
 bookingRouter.post("/create/:id", isAuth, createBooking);
 bookingRouter.delete("/cancel/:id", isAuth, cancelBooking);
-
-// ✅ (optional) Admin or internal trigger to mark completed bookings
 bookingRouter.put("/update-statuses", updateBookingStatuses);
+bookingRouter.get("/unavailable/:listingId", getUnavailableDates); // No auth required
+
+
+// ✅ NEW: Get all bookings of the current user (used in BookingContext)
+bookingRouter.get("/my", isAuth, getMyBookings); // ✅ <-- ADD THIS
 
 export default bookingRouter;

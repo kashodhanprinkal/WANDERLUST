@@ -90,28 +90,47 @@ export const createBooking = async (req, res) => {
 export const cancelBooking = async (req, res) => {
   try {
     const { id } = req.params;
+    const currentUserId = req.userId;
 
-    // 🧠 Get booking by ID
-    const booking = await Booking.findById(id);
+    const booking = await Booking.findById(id).populate("listing");
     if (!booking) {
       return res.status(404).json({ message: "Booking not found" });
     }
 
-    // ✅ Remove booking from User
-    await User.findByIdAndUpdate(booking.guest, {
-      $pull: { booking: booking._id },
-    });
+    const listingHostId = booking.listing.host?.toString();
+    const guestId = booking.guest?.toString();
 
-    // ✅ Optionally, mark the booking as "cancelled"
+    // 🧠 Determine who is cancelling
+    let cancelledBy = null;
+    if (currentUserId === guestId) {
+      cancelledBy = "guest";
+    } else if (currentUserId === listingHostId) {
+      cancelledBy = "host";
+    } else {
+      return res.status(403).json({ message: "You are not authorized to cancel this booking." });
+    }
+
+    // ❌ DON'T remove from user's bookings – this causes it to disappear from MyBookings
+    // await User.findByIdAndUpdate(guestId, {
+    //   $pull: { booking: booking._id },
+    // });
+
+    // ✅ Mark as cancelled and set who cancelled
     booking.status = "cancelled";
+    booking.cancelledBy = cancelledBy;
     await booking.save();
 
-    return res.status(200).json({ message: "Booking cancelled" });
+    return res.status(200).json({ message: `Booking cancelled by ${cancelledBy}` });
+
   } catch (error) {
     console.error("❌ Booking cancel error:", error);
     return res.status(500).json({ message: "Booking cancel error" });
   }
 };
+
+
+
+
 
 // ✅ UPDATE STATUS TO 'DONE' AFTER CHECKOUT
 export const updateBookingStatuses = async (req, res) => {
@@ -137,3 +156,41 @@ export const updateBookingStatuses = async (req, res) => {
     res.status(500).json({ message: "Failed to update booking statuses", error: error.message });
   }
 };
+
+// ✅ GET MY BOOKINGS
+export const getMyBookings = async (req, res) => {
+  try {
+    const userId = req.userId;
+
+    const bookings = await Booking.find({ guest: userId })
+      .populate("listing") // Include full listing details
+      .sort({ checkIn: -1 }); // Optional: recent first
+
+    res.status(200).json(bookings);
+  } catch (error) {
+    console.error("❌ Failed to get user bookings:", error);
+    res.status(500).json({ message: "Failed to get bookings" });
+  }
+};
+// ✅ GET UNAVAILABLE DATES FOR A LISTING
+export const getUnavailableDates = async (req, res) => {
+  try {
+    const { listingId } = req.params;
+
+    const bookings = await Booking.find({
+      listing: listingId,
+      status: { $ne: "cancelled" }, // Only active bookings
+    }).select("checkIn checkOut");
+
+    const unavailable = bookings.map((booking) => ({
+      checkIn: booking.checkIn,
+      checkOut: booking.checkOut,
+    }));
+
+    res.status(200).json(unavailable);
+  } catch (error) {
+    console.error("❌ Failed to fetch unavailable dates:", error);
+    res.status(500).json({ message: "Failed to get unavailable dates" });
+  }
+};
+

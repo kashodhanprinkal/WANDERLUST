@@ -1,89 +1,112 @@
-import axios from 'axios';
+// src/Context/BookingContext.jsx
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import axios from 'axios';
 import { authDataContext } from './AuthContext';
 import { userDataContext } from './UserContext';
 import { ListingDataContext } from './ListingContext';
 
-// Context for booking operations
 export const bookingDataContext = createContext();
 
 function BookingContext({ children }) {
-  // Booking form states
   const [checkIn, setcheckIn] = useState("");
   const [checkOut, setCheckOut] = useState("");
   const [total, setTotal] = useState(0);
   const [night, setNight] = useState(0);
   const [bookingData, setBookingData] = useState([]);
-  const [bookingStatus, setBookingStatus] = useState(null); // 'success' or 'error'
+  const [bookingStatus, setBookingStatus] = useState(null);
   const [bookingLoading, setBookingLoading] = useState(false);
 
-  // App context
   const { serverUrl } = useContext(authDataContext);
   const { userData, reloadUser: fetchCurrentUser } = useContext(userDataContext);
   const { getListing } = useContext(ListingDataContext);
 
-  // 🔵 Booking a listing
+  const [unavailableDates, setUnavailableDates] = useState([]);
+
+
+  // ✅ Create Booking
   const handleBooking = async (id) => {
     try {
       setBookingLoading(true);
       setBookingStatus(null);
 
       if (!userData?._id) {
-        console.error("User is not logged in");
         setBookingStatus("error");
         return;
       }
 
-      const result = await axios.post(
+      const res = await axios.post(
         `${serverUrl}/api/booking/create/${id}`,
         { checkIn, checkOut, totalRent: total },
         { withCredentials: true }
       );
 
-      console.log("✅ Booking result:", result.data);
       await fetchCurrentUser();
-      setBookingData(result.data);
+      setBookingData(res.data);
       setBookingStatus("success");
     } catch (error) {
-      console.error("❌ Booking failed:", error.response?.data || error.message);
-      setBookingData(null);
+      console.error("❌ Booking Error:", error.response?.data || error.message);
       setBookingStatus("error");
     } finally {
       setBookingLoading(false);
     }
   };
 
-  // 🔴 Cancel a booking (host only)
+  // ❌ Cancel Booking
   const cancelBooking = async (id) => {
     try {
-      const result = await axios.delete(`${serverUrl}/api/booking/cancel/${id}`, {
+      const res = await axios.delete(`${serverUrl}/api/booking/cancel/${id}`, {
         withCredentials: true
       });
       await fetchCurrentUser();
-      console.log("❌ Booking cancelled:", result.data);
+      console.log("❌ Booking Cancelled:", res.data);
     } catch (error) {
-      console.error("⚠️ Cancel error:", error.response?.data || error.message);
+      console.error("❌ Cancel Error:", error.response?.data || error.message);
     }
   };
 
-  // ✅ Automatically mark bookings as "done" after checkout
+  // ✅ Auto-update done bookings
   const updateBookingStatusIfDone = async () => {
     try {
-      const result = await axios.put(`${serverUrl}/api/booking/update-statuses`, {}, { withCredentials: true });
-
-      console.log("📦 Booking status check complete:", result.data);
-      await fetchCurrentUser(); // Refresh user data with updated statuses
+      const res = await axios.put(`${serverUrl}/api/booking/update-statuses`, {}, {
+        withCredentials: true,
+      });
+      await fetchCurrentUser();
     } catch (error) {
-      console.error("⚠️ Status update failed:", error.response?.data || error.message);
+      console.error("❌ Update status failed:", error.response?.data || error.message);
     }
   };
 
-  // Optionally run once when component mounts
   useEffect(() => {
     updateBookingStatusIfDone();
   }, []);
 
-  // Context values exposed to all children
+  // ✅ Check if user has booked this listing (but not cancelled or done)
+  const isListingBookedByUser = (listingId) => {
+    if (!userData?.booking) return false;
+
+    return userData.booking.some(
+      (booking) =>
+        booking?.listing?._id === listingId &&
+        booking?.status === "booked"
+    );
+  };
+
+  const fetchUnavailableDates = async (listingId) => {
+  try {
+    const res = await axios.get(`${serverUrl}/api/booking/unavailable-dates/${listingId}`, {
+      withCredentials: true,
+    });
+    if (Array.isArray(res.data)) {
+      setUnavailableDates(res.data);
+    } else {
+      console.error("Unexpected unavailable dates format:", res.data);
+    }
+  } catch (error) {
+    console.error("❌ Failed to fetch unavailable dates:", error.response?.data || error.message);
+  }
+};
+
+
   const value = {
     checkIn, setcheckIn,
     checkOut, setCheckOut,
@@ -94,7 +117,10 @@ function BookingContext({ children }) {
     bookingStatus, setBookingStatus,
     bookingLoading,
     cancelBooking,
-    updateBookingStatusIfDone, // expose status checker
+    updateBookingStatusIfDone,
+    isListingBookedByUser,
+      unavailableDates,
+  fetchUnavailableDates,
   };
 
   return (

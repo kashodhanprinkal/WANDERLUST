@@ -5,8 +5,10 @@ import { userDataContext } from '../Context/UserContext';
 import { authDataContext } from '../Context/AuthContext';
 import { ReviewContext } from '../Context/ReviewContext';
 import ReviewPopup from '../component/ReviewPopup';
-import { FaStar } from "react-icons/fa6";
+import { FaStar, FaBan } from "react-icons/fa6";
 import axios from 'axios';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 function MyBooking() {
   const navigate = useNavigate();
@@ -15,8 +17,9 @@ function MyBooking() {
   const { allReviews, fetchReviews, createReview, updateReview, deleteReview } = useContext(ReviewContext);
 
   const [activeListingId, setActiveListingId] = useState(null);
-  const [popupData, setPopupData] = useState({}); // { listingId, guestReview }
+  const [popupData, setPopupData] = useState({});
 
+  // ✅ Update status if booking is done
   useEffect(() => {
     const updateBookingStatusIfDone = async () => {
       try {
@@ -29,6 +32,7 @@ function MyBooking() {
     updateBookingStatusIfDone();
   }, []);
 
+  // ✅ Open Review Modal
   const openReviewPopup = async (listingId) => {
     await fetchReviews(listingId);
     const guestReview = allReviews[listingId]?.find(r => r.guest._id === userData._id);
@@ -36,6 +40,7 @@ function MyBooking() {
     setActiveListingId(listingId);
   };
 
+  // ✅ Submit Review
   const handleReviewSubmit = async ({ rating, reviewText }) => {
     const { guestReview } = popupData;
     if (guestReview) {
@@ -45,10 +50,29 @@ function MyBooking() {
     }
   };
 
+  // ✅ Delete Review
   const handleReviewDelete = async () => {
     const { guestReview } = popupData;
     if (guestReview) {
       await deleteReview(guestReview._id, activeListingId);
+    }
+  };
+
+  // ✅ Cancel Booking
+  const handleCancel = async (bookingId) => {
+    try {
+      const confirm = window.confirm("Are you sure you want to cancel this booking?");
+      if (!confirm) return;
+
+      const res = await axios.delete(`${serverUrl}/api/booking/cancel/${bookingId}`, {
+        withCredentials: true
+      });
+
+      await reloadUser();
+      toast.success(res.data.message || "Booking cancelled successfully!");
+    } catch (err) {
+      toast.error("Cancellation failed!");
+      console.error("Cancel Error:", err.response?.data || err.message);
     }
   };
 
@@ -64,7 +88,6 @@ function MyBooking() {
 
       <h1 className="text-3xl font-bold text-gray-800 mt-16 mb-6">Your Bookings</h1>
 
-      {/* If No Bookings */}
       {userData?.booking?.length === 0 ? (
         <p className="text-gray-600">No bookings yet!</p>
       ) : (
@@ -77,7 +100,7 @@ function MyBooking() {
             return (
               <div
                 key={booking._id}
-                className="border rounded-xl shadow-sm p-4 bg-white hover:shadow-md transition"
+                className="border rounded-xl shadow-sm p-4 bg-white hover:shadow-md transition relative group"
               >
                 {/* Listing Info */}
                 <div className="flex gap-4">
@@ -100,19 +123,32 @@ function MyBooking() {
                   <p><strong>Check-out:</strong> {new Date(booking.checkOut).toLocaleDateString()}</p>
                   <p><strong>Total Rent:</strong> ₹{booking.totalRent}</p>
                   <p>
-                    <strong>Status:</strong>{' '}
-                    <span className={`font-semibold ${
-                      booking.status === "done"
+                    <strong>Status:</strong>{" "}
+                    <span className={`font-semibold ${booking.status === "done"
                         ? "text-green-600"
                         : booking.status === "cancelled"
-                        ? "text-red-600"
-                        : "text-blue-600"
-                    }`}>
-                      {booking.status}
+                          ? "text-red-600"
+                          : "text-blue-600"
+                      }`}>
+                      {booking.status === "cancelled"
+                        ? `Cancelled by ${booking.cancelledBy === "host" ? "Host" : "You"}`
+                        : booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
                     </span>
                   </p>
                   <p><strong>Booked On:</strong> {new Date(booking.createdAt).toLocaleDateString()}</p>
                 </div>
+
+                {/* ✅ Cancel Button (only if status is booked) */}
+                {booking.status === "booked" && (
+                  <div className="mt-4 flex gap-2 items-center">
+                    <button
+                      onClick={() => handleCancel(booking._id)}
+                      className="flex items-center gap-1 text-white bg-red-500 hover:bg-red-600 transition px-3 py-1 rounded-full"
+                    >
+                      <FaBan className="w-4 h-4" /> Cancel Booking
+                    </button>
+                  </div>
+                )}
 
                 {/* Review Section */}
                 {booking.status === "done" && (
@@ -152,7 +188,7 @@ function MyBooking() {
         </div>
       )}
 
-      {/* Review Popup */}
+      {/* Review Modal */}
       {activeListingId && (
         <ReviewPopup
           listingId={activeListingId}
