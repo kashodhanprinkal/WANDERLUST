@@ -194,3 +194,21 @@ export const getUnavailableDates = async (req, res) => {
   }
 };
 
+// ✅ GET BOOKINGS BY HOST
+export const getBookingsByHost = async (req, res) => {
+  try {
+    const hostId = req.userId;
+
+    const bookings = await Booking.find({ host: hostId })
+      .populate("guest", "name email")
+      .populate("listing", "title city image1")
+      .sort({ checkIn: -1 });
+
+    res.status(200).json(bookings);
+  } catch (error) {
+    console.error("❌ Failed to fetch host bookings:", error);
+    res.status(500).json({ message: "Failed to get bookings" });
+  }
+};
+
+
