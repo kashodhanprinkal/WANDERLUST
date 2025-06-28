@@ -1,6 +1,7 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { FaStar } from "react-icons/fa6";
 import { ReviewContext } from '../Context/ReviewContext';
+import { toast } from 'react-toastify';
 
 function ReviewPopup({ listingId, guestReview, onSubmit, onDelete, onClose }) {
   const { fetchReviews } = useContext(ReviewContext);
@@ -11,17 +12,30 @@ function ReviewPopup({ listingId, guestReview, onSubmit, onDelete, onClose }) {
   const [isEditing, setIsEditing] = useState(!!guestReview);
 
   useEffect(() => {
-    fetchReviews(listingId); // Ensure reviews are refreshed
+    fetchReviews(listingId);
   }, [listingId]);
 
   const handleSubmit = async () => {
-    await onSubmit({ rating, reviewText });
-    onClose();
+    try {
+      console.log("Submitting Review:", { rating, reviewText });
+      await onSubmit({ rating, reviewText });
+      toast.success(isEditing ? "Review updated!" : "Review submitted!");
+      onClose();
+    } catch (err) {
+      toast.error("Failed to submit review!");
+      console.error("Error in submit:", err);
+    }
   };
 
   const handleDelete = async () => {
-    await onDelete();
-    onClose();
+    try {
+      await onDelete();
+      toast.success("Review deleted!");
+      onClose();
+    } catch (err) {
+      toast.error("Failed to delete review!");
+      console.error("Delete error:", err);
+    }
   };
 
   return (

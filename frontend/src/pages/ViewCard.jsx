@@ -1,28 +1,40 @@
-import React, { useContext, useState } from "react";
-import { FaArrowLeft } from "react-icons/fa";
+import React, { useContext, useState, useEffect } from "react";
+import { FaArrowLeft, FaStar } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import { ListingDataContext } from "../Context/ListingContext";
 import { userDataContext } from "../Context/UserContext";
-import UpdatePopup from "./UpdatePopup"; 
+import { ReviewContext } from "../Context/ReviewContext";
+import UpdatePopup from "./UpdatePopup";
 import BookingPopup from "./BookingPopup";
 
 function ViewCard() {
   const navigate = useNavigate();
   const { cardDetails } = useContext(ListingDataContext);
   const { userData } = useContext(userDataContext);
+  const { allReviews, fetchReviews } = useContext(ReviewContext);
 
   const [updatePopUp, setUpdatePopUp] = useState(false);
   const [bookingPopUp, setBookingPopUp] = useState(false);
+  const [listingReviews, setListingReviews] = useState([]);
+
+  useEffect(() => {
+    const getReviews = async () => {
+      if (cardDetails?._id) {
+        await fetchReviews(cardDetails._id);
+        setListingReviews(allReviews[cardDetails._id] || []);
+      }
+    };
+    getReviews();
+  }, [cardDetails, allReviews]);
 
   if (!cardDetails) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-500 text-xl">Loading details...</p>
+        <p className="text-gray-500 text-xl">Loading listing details...</p>
       </div>
     );
   }
 
-  // Destructure images from cardDetails to pass to image tags
   const {
     title,
     description,
@@ -39,119 +51,109 @@ function ViewCard() {
   } = cardDetails;
 
   return (
-    <div className="min-h-screen bg-white flex flex-col items-center gap-6 py-6 px-4 overflow-auto relative">
+    <div className="min-h-screen bg-gray-100 py-10 px-4 flex flex-col items-center relative">
       {/* Back Button */}
       <button
         onClick={() => navigate("/")}
-        className="absolute top-4 left-4 w-12 h-12 bg-red-600 rounded-full flex items-center justify-center shadow-md hover:scale-105 transition"
+        className="absolute top-4 left-4 w-12 h-12 bg-white border rounded-full flex items-center justify-center shadow hover:scale-105 transition"
       >
-        <FaArrowLeft className="text-white w-6 h-6" />
+        <FaArrowLeft className="text-red-600 w-5 h-5" />
       </button>
 
-      {/* Banner */}
-      <div className="w-full max-w-xl bg-red-600 text-white text-center py-2 rounded-full font-semibold shadow">
-        Set the stage for great memories — your guests await!
-      </div>
+      {/* Heading */}
+      <h1 className="text-3xl font-bold text-red-600 mb-2 text-center">{title}</h1>
+      <p className="text-gray-700 text-lg mb-6 text-center">
+        {category?.toUpperCase()} · {landmark}, {city}
+      </p>
 
-      {/* Location Preview */}
-      <div className="w-full max-w-4xl text-xl md:text-2xl font-medium text-gray-800">
-        {`in ${landmark?.toUpperCase() || ""}, ${city?.toUpperCase() || ""} `}
-      </div>
-
-      {/* Images Preview */}
-      <div className="w-full max-w-5xl flex flex-col md:flex-row gap-4">
-        {/* Main Image */}
-        <div className="md:w-2/3 w-full h-[300px] overflow-hidden border rounded-lg">
+      {/* Images */}
+      <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="col-span-2 h-[300px] md:h-[400px] rounded-lg overflow-hidden border">
           {image1 ? (
             <img src={image1} alt="Main" className="w-full h-full object-cover" />
           ) : (
-            <div className="w-full h-full flex items-center justify-center bg-gray-200 text-gray-500">
-              No Image
-            </div>
+            <div className="flex justify-center items-center w-full h-full bg-gray-200 text-gray-500">No Image</div>
           )}
         </div>
-        {/* Side Images */}
-        <div className="md:w-1/3 w-full flex flex-col gap-4">
+        <div className="flex flex-col gap-4">
           {[image2, image3].map((img, idx) => (
-            <div key={idx} className="w-full h-[145px] overflow-hidden border rounded-lg">
+            <div key={idx} className="h-[145px] md:h-[195px] rounded-lg overflow-hidden border">
               {img ? (
                 <img src={img} alt={`Side ${idx + 1}`} className="w-full h-full object-cover" />
               ) : (
-                <div className="w-full h-full flex items-center justify-center bg-gray-200 text-gray-500">
-                  No Image
-                </div>
+                <div className="flex justify-center items-center w-full h-full bg-gray-200 text-gray-500">No Image</div>
               )}
             </div>
           ))}
         </div>
-      </div>
-
-      {/* Bottom Images */}
-      <div className="w-full max-w-5xl flex flex-row gap-4">
         {[image4, image5].map((img, idx) => (
-          <div key={idx} className="w-1/2 h-[150px] overflow-hidden border rounded-lg">
+          <div key={idx} className="h-[150px] rounded-lg overflow-hidden border">
             {img ? (
               <img src={img} alt={`Bottom ${idx + 1}`} className="w-full h-full object-cover" />
             ) : (
-              <div className="w-full h-full flex items-center justify-center bg-gray-200 text-gray-500">
-                No Image
-              </div>
+              <div className="flex justify-center items-center w-full h-full bg-gray-200 text-gray-500">No Image</div>
             )}
           </div>
         ))}
       </div>
 
-      {/* Info */}
-      <div className="w-full max-w-4xl text-lg md:text-2xl text-gray-900 font-semibold mt-4">
-        {`${title?.toUpperCase() || ""} - ${category?.toUpperCase() || ""}, ${landmark?.toUpperCase() || ""}`}
+      {/* Details */}
+      <div className="w-full max-w-4xl bg-white p-6 rounded-lg shadow-md space-y-4 mb-6">
+        <p className="text-xl font-semibold text-gray-800">{description}</p>
+        <p className="text-lg text-gray-700">
+          <span className="font-medium text-gray-900">Rent:</span> ₹{rent} / day
+        </p>
+        <div className="flex gap-4">
+          {host === userData._id ? (
+            <button
+              onClick={() => setUpdatePopUp(true)}
+              className="bg-red-600 hover:bg-red-700 text-white font-medium px-6 py-2 rounded-full transition"
+            >
+              Edit Listing
+            </button>
+          ) : (
+            <button
+              onClick={() => setBookingPopUp(true)}
+              className="bg-green-600 hover:bg-green-700 text-white font-medium px-6 py-2 rounded-full transition"
+            >
+              Book Now
+            </button>
+          )}
+        </div>
       </div>
-      <div className="w-full max-w-4xl text-md md:text-xl text-gray-700 mt-2">
-        {description || "No description available."}
-      </div>
-      <div className="w-full max-w-4xl text-md md:text-xl text-red-600 font-bold mt-2">
-        ₹{rent || "-"} / per day
-      </div>
 
-      {/* Action Buttons */}
-     <div className="flex gap-4 mt-4">
+      {/* Reviews */}
+      {listingReviews.length > 0 && (
+        <div className="w-full max-w-4xl bg-white p-6 rounded-lg shadow-md">
+          <h2 className="text-2xl font-semibold text-gray-800 mb-4">Guest Reviews</h2>
+          <div className="space-y-4">
+            {listingReviews.map((review) => (
+              <div key={review._id} className="border rounded-md p-4 bg-gray-50 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <p className="font-semibold text-gray-700">{review.guest?.name}</p>
+                  <div className="flex items-center gap-1 text-yellow-500">
+                    {[...Array(review.rating)].map((_, idx) => (
+                      <FaStar key={idx} />
+                    ))}
+                  </div>
+                </div>
+                <p className="text-gray-700 mt-2">{review.reviewText}</p>
+                <p className="text-xs text-gray-400 mt-1">
+                  {new Date(review.createdAt).toLocaleDateString()}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
-
-  {host === userData._id && (
-    <button
-      className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-full shadow-md transition"
-      onClick={() => setUpdatePopUp(true)}
-    >
-      Edit
-    </button>
-  )}
-
-
-  {host !== userData._id && (
-    <button
-      className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-full shadow-md transition"
-      onClick={() => setBookingPopUp(true)}
-    >
-      Booking
-    </button>
-  )}
-</div>
-
-{/* Update Popup */}
-{updatePopUp && (
-  <UpdatePopup
-    cardDetails={cardDetails}
-    onClose={() => setUpdatePopUp(false)}
-  />
-)}
-
-{/* Booking Popup */}
-{bookingPopUp && (
-  <BookingPopup
-    cardDetails={cardDetails}
-    onClose={() => setBookingPopUp(false)}  // <-- Corrected here
-  />
-)}
-
+      {/* Popups */}
+      {updatePopUp && (
+        <UpdatePopup cardDetails={cardDetails} onClose={() => setUpdatePopUp(false)} />
+      )}
+      {bookingPopUp && (
+        <BookingPopup cardDetails={cardDetails} onClose={() => setBookingPopUp(false)} />
+      )}
     </div>
   );
 }

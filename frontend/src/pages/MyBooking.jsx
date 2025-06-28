@@ -33,22 +33,24 @@ function MyBooking() {
   }, []);
 
   // ✅ Open Review Modal
-  const openReviewPopup = async (listingId) => {
-    await fetchReviews(listingId);
-    const guestReview = allReviews[listingId]?.find(r => r.guest._id === userData._id);
-    setPopupData({ listingId, guestReview });
-    setActiveListingId(listingId);
-  };
+ const openReviewPopup = async (listingId) => {
+  const reviews = await fetchReviews(listingId); // ✅ use the latest reviews
+  const guestReview = reviews.find(r => r.guest._id === userData._id); // ✅ correct review
+  setPopupData({ listingId, guestReview }); // ✅ store correct review in popupData
+  setActiveListingId(listingId);
+};
+
 
   // ✅ Submit Review
   const handleReviewSubmit = async ({ rating, reviewText }) => {
-    const { guestReview } = popupData;
-    if (guestReview) {
-      await updateReview(guestReview._id, { rating, reviewText }, activeListingId);
-    } else {
-      await createReview(activeListingId, { rating, reviewText });
-    }
-  };
+  const { guestReview } = popupData;
+  if (guestReview) {
+    await updateReview(guestReview._id, { rating, reviewText }, activeListingId);
+  } else {
+    await createReview(activeListingId, { rating, reviewText });
+  }
+};
+
 
   // ✅ Delete Review
   const handleReviewDelete = async () => {

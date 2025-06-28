@@ -9,14 +9,17 @@ export default function ReviewProvider({ children }) {
   const { serverUrl } = useContext(authDataContext);
   const [allReviews, setAllReviews] = useState({}); // key: listingId, value: reviews[]
 
-  const fetchReviews = async (listingId) => {
-    try {
-      const res = await axios.get(`${serverUrl}/api/review/listing/${listingId}`);
-      setAllReviews(prev => ({ ...prev, [listingId]: res.data.reviews }));
-    } catch (err) {
-      console.error("Fetch failed:", err);
-    }
-  };
+const fetchReviews = async (listingId) => {
+  try {
+    const res = await axios.get(`${serverUrl}/api/review/listing/${listingId}`);
+    setAllReviews(prev => ({ ...prev, [listingId]: res.data.reviews }));
+    return res.data.reviews; // ✅ return the reviews directly
+  } catch (err) {
+    console.error("Fetch failed:", err);
+    return [];
+  }
+};
+
 
   const createReview = async (listingId, data) => {
     const res = await axios.post(`${serverUrl}/api/review/create/${listingId}`, data, {

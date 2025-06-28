@@ -11,7 +11,9 @@ import {
 const reviewRouter = express.Router();
 
 // ✅ Add a new review for a listing (guest only)
-reviewRouter.post("/create/:listingId", isAuth, createReview);
+reviewRouter.post("/create/:id", isAuth, createReview);
+
+
 
 // ✅ Update a review (only by the user who wrote it)
 reviewRouter.put("/update/:id", isAuth, updateReview);
