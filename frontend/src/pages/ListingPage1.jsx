@@ -1,17 +1,34 @@
-import React, { useContext } from "react";
+import React, { useContext, useState, useEffect } from "react";
 import { FaArrowLeft } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import { ListingDataContext } from "../Context/ListingContext";
+import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+
+// Fix marker icon URLs
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+});
 
 function ListingPage1() {
-  let navigate = useNavigate();
-  let{
+  const navigate = useNavigate();
+
+  // ✅ Import values from context
+  const {
     title, setTitle,
     description, setDescription,
     rent, setRent,
     city, setCity,
     landmark, setLandmark,
+    country, setCountry,
+    state, setState,
     category, setCategory,
+    latitude, setLatitude,
+    longitude, setLongitude,
     frontEndImage1, setFrontEndImage1,
     frontEndImage2, setFrontEndImage2,
     frontEndImage3, setFrontEndImage3,
@@ -23,169 +40,199 @@ function ListingPage1() {
     backEndImage4, setBackEndImage4,
     backEndImage5, setBackEndImage5,
   } = useContext(ListingDataContext);
-  
-  const handleImage1 = (e) => {
-  let file = e.target.files[0];
-  setBackEndImage1(file);
-  setFrontEndImage1(URL.createObjectURL(file));
-};
 
-const handleImage2 = (e) => {
-  let file = e.target.files[0];
-  setBackEndImage2(file);
-  setFrontEndImage2(URL.createObjectURL(file));
-};
+  const [coordinates, setCoordinates] = useState(null);
+  const [isMapLoading, setIsMapLoading] = useState(false);
 
-const handleImage3 = (e) => {
-  let file = e.target.files[0];
-  setBackEndImage3(file);
-  setFrontEndImage3(URL.createObjectURL(file));
-};
+  // ✅ Geocode address when location fields change
+  useEffect(() => {
+    const geocodeAddress = async () => {
+      if (landmark && city && state && country) {
+        setIsMapLoading(true);
+        try {
+          const fullAddress = `${landmark}, ${city}, ${state}, ${country}`;
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullAddress)}&limit=1`
+          );
+          const data = await response.json();
+          if (data.length > 0) {
+            const lat = parseFloat(data[0].lat);
+            const lng = parseFloat(data[0].lon);
+            console.log("✅ Geocoded lat/lng:", lat, lng);
 
-const handleImage4 = (e) => {
-  let file = e.target.files[0];
-  setBackEndImage4(file);
-  setFrontEndImage4(URL.createObjectURL(file));
-};
+            setCoordinates({ lat, lng });
 
-const handleImage5 = (e) => {
-  let file = e.target.files[0];
-  setBackEndImage5(file);
-  setFrontEndImage5(URL.createObjectURL(file));
-};
+            // ✅ Add this to update the context values
+            setLatitude(lat);
+            setLongitude(lng);
+          }
+        } catch (error) {
+          console.error("Geocoding error:", error);
+        } finally {
+          setIsMapLoading(false);
+        }
+      }
+    };
 
-const imageHandlers = [
-  handleImage1,
-  handleImage2,
-  handleImage3,
-  handleImage4,
-  handleImage5,
-];
+    const timer = setTimeout(geocodeAddress, 1000); // Debounce
+    return () => clearTimeout(timer);
+  }, [landmark, city, state, country]);
 
+  useEffect(() => {
+    console.log("📦 Coordinates from context:", latitude, longitude);
+  }, [latitude, longitude]);
+
+  // ✅ Image handlers
+  const createImageHandler = (setBack, setFront) => (e) => {
+    const file = e.target.files[0];
+    setBack(file);
+    setFront(URL.createObjectURL(file));
+  };
+
+  const imageHandlers = [
+    createImageHandler(setBackEndImage1, setFrontEndImage1),
+    createImageHandler(setBackEndImage2, setFrontEndImage2),
+    createImageHandler(setBackEndImage3, setFrontEndImage3),
+    createImageHandler(setBackEndImage4, setFrontEndImage4),
+    createImageHandler(setBackEndImage5, setFrontEndImage5),
+  ];
 
   return (
-  <div className="w-full h-screen bg-white flex items-center justify-center relative">
-    <form
-      action=""
-      className="max-w-[900px] w-[90%] h-[600px] flex flex-col items-start gap-5 overflow-y-auto px-4 py-6 shadow-lg border rounded-xl"
-      onSubmit={(e)=>{e.preventDefault()
-        navigate("/listingpage2")}
-      }
-    >
-      {/* Back Button */}
-      <div
-        className="w-12 h-12 bg-red-600 cursor-pointer absolute top-4 left-4 rounded-full flex items-center justify-center shadow-md hover:scale-105 transition"
-        onClick={() => navigate("/")}
+    <div className="w-full min-h-screen bg-white flex items-center justify-center relative">
+      <form
+        className="max-w-[900px] w-[90%] h-[90vh] flex flex-col items-start gap-5 overflow-y-auto px-4 py-6 shadow-lg border rounded-xl"
+        onSubmit={(e) => {
+          e.preventDefault();
+          navigate("/listingpage2");
+        }}
       >
-        <FaArrowLeft className="w-6 h-6 text-white" />
-      </div>
+        {/* Back Button */}
+        <div
+          className="w-12 h-12 bg-red-600 cursor-pointer absolute top-4 left-4 rounded-full flex items-center justify-center shadow-md hover:scale-105 transition"
+          onClick={() => navigate("/")}
+        >
+          <FaArrowLeft className="w-6 h-6 text-white" />
+        </div>
 
-      {/* Banner */}
-      <div className="w-full bg-red-600 text-white text-center py-2 rounded-full font-semibold shadow">
-        Open your doors to the world — and your wallet.
-      </div>
+        {/* Title */}
+        <div className="w-full">
+          <label className="font-semibold">Title</label>
+          <input
+            className="w-full border px-3 py-2 rounded-lg"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            required
+          />
+        </div>
 
-      {/* Title Input */}
-      <div className="w-full flex flex-col gap-2">
-        <label htmlFor="title" className="text-lg font-medium">
-          Title
-        </label>
-        <input
-          type="text"
-          id="title"
-          className="w-full h-12 border-2 border-gray-600 rounded-lg text-base px-4"
-          required onChange={(e)=>setTitle(e.target.value)} value={title}
-        />
-      </div>
+        {/* Description */}
+        <div className="w-full">
+          <label className="font-semibold">Description</label>
+          <textarea
+            className="w-full border px-3 py-2 rounded-lg"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            required
+          />
+        </div>
 
-      {/* Description */}
-      <div className="w-full flex flex-col gap-2">
-        <label htmlFor="description" className="text-lg font-medium">
-          Description
-        </label>
-        <textarea
-          id="description"
-          className="w-full h-24 border-2 border-gray-600 rounded-lg text-base px-4 py-2 resize-none"
-          required onChange={(e)=>setDescription(e.target.value)} value={description}
-        />
-      </div>
+        {/* Rent */}
+        <div className="w-full">
+          <label className="font-semibold">Rent</label>
+          <input
+            type="number"
+            className="w-full border px-3 py-2 rounded-lg"
+            value={rent}
+            onChange={(e) => setRent(e.target.value)}
+            required
+          />
+        </div>
 
-      {/* Rent */}
-      <div className="w-full flex flex-col gap-2">
-        <label htmlFor="rent" className="text-lg font-medium">
-          Rent
-        </label>
-        <input
-          type="number"
-          id="rent"
-          className="w-full h-12 border-2 border-gray-600 rounded-lg text-base px-4"
-          required onChange={(e)=>setRent(e.target.value)} value={rent}
-        />
-      </div>
+        {/* Location */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+          <div>
+            <label>Country</label>
+            <input
+              className="w-full border px-3 py-2 rounded-lg"
+              value={country}
+              onChange={(e) => setCountry(e.target.value)}
+              required
+            />
+          </div>
+          <div>
+            <label>State</label>
+            <input
+              className="w-full border px-3 py-2 rounded-lg"
+              value={state}
+              onChange={(e) => setState(e.target.value)}
+              required
+            />
+          </div>
+          <div>
+            <label>City</label>
+            <input
+              className="w-full border px-3 py-2 rounded-lg"
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+              required
+            />
+          </div>
+          <div>
+            <label>Landmark</label>
+            <input
+              className="w-full border px-3 py-2 rounded-lg"
+              value={landmark}
+              onChange={(e) => setLandmark(e.target.value)}
+              required
+            />
+          </div>
+        </div>
 
-      {/* City */}
-      <div className="w-full flex flex-col gap-2">
-        <label htmlFor="city" className="text-lg font-medium">
-          City
-        </label>
-        <input
-          type="text"
-          id="city"
-          className="w-full h-12 border-2 border-gray-600 rounded-lg text-base px-4"
-          required onChange={(e)=>setCity(e.target.value)} value={city}
-        />
-      </div>
+        {/* Map */}
+        <div className="w-full h-64 border rounded-lg mt-4 overflow-hidden">
+          {isMapLoading ? (
+            <div className="w-full h-full flex items-center justify-center text-gray-500">
+              Loading map...
+            </div>
+          ) : coordinates ? (
+            <MapContainer center={[coordinates.lat, coordinates.lng]} zoom={15} style={{ height: "100%", width: "100%" }}>
+              <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+              <Marker position={[coordinates.lat, coordinates.lng]}>
+                <Popup>
+                  {landmark}<br />
+                  {city}, {state}, {country}
+                </Popup>
+              </Marker>
+            </MapContainer>
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-gray-500">
+              Enter address to see map
+            </div>
+          )}
+        </div>
 
-      {/* Landmark */}
-      <div className="w-full flex flex-col gap-2">
-        <label htmlFor="landmark" className="text-lg font-medium">
-          Landmark
-        </label>
-        <input
-          type="text"
-          id="landmark"
-          className="w-full h-12 border-2 border-gray-600 rounded-lg text-base px-4"
-          required onChange={(e)=>setLandmark(e.target.value)} value={landmark}
-        />
-      </div>
+        {/* Images */}
+        {[1, 2, 3, 4, 5].map((num, idx) => (
+          <div key={num} className="w-full">
+            <label>Image {num}</label>
+            <input
+              type="file"
+              className="w-full border px-3 py-2 rounded-lg"
+              onChange={imageHandlers[idx]}
+              required={num === 1}
+            />
+          </div>
+        ))}
 
-        {/* category 
-      <div className="w-full flex flex-col gap-2">
-        <label htmlFor="category" className="text-lg font-medium">
-          Category
-        </label>
-        <input
-          type="text"
-          id="category"
-          className="w-full h-12 border-2 border-gray-600 rounded-lg text-base px-4"
-          required onChange={(e)=>setCategory(e.target.value)} value={category}
-        />
-      </div>*/}
-
-      {/* Image Uploads */}
-      {[1, 2, 3, 4, 5].map((num, idx) => (
-  <div key={num} className="w-full flex flex-col gap-2">
-    <label htmlFor={`image${num}`} className="text-lg font-medium">
-      Image {num}
-    </label>
-    <input
-      type="file"
-      id={`image${num}`}
-      onChange={imageHandlers[idx]}
-      className="w-full h-10 border-2 border-gray-500 rounded-lg text-sm px-3 py-1"
-      required
-    />
-  </div>
-))}
-
-
-      <button className="mt-6 px-10 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition">
+        <button
+          type="submit"
+          className="mt-6 px-6 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800"
+        >
           Next
         </button>
-    </form>
-  </div>
-);
-
+      </form>
+    </div>
+  );
 }
 
 export default ListingPage1;

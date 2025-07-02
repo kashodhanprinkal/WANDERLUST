@@ -63,7 +63,24 @@ const listingSchema = new mongoose.Schema({
     min:0,
     max:5,
     default:0
-  }
+  },
+  state: {
+  type: String,
+  required: true,
+},
+country: {
+  type: String,
+  required: true,
+},
+latitude: {
+  type: Number,
+  required: true,
+},
+longitude: {
+  type: Number,
+  required: true,
+}
+
 }, { timestamps: true });
 
 const Listing = mongoose.model("Listing", listingSchema);

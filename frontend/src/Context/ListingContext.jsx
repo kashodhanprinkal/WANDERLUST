@@ -1,108 +1,180 @@
 import axios from "axios";
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from "react-router-dom";
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { authDataContext } from "./AuthContext";
+import { toast } from "react-toastify";
+import 'react-toastify/dist/ReactToastify.css';
 
-// ✅ Use function declaration for the provider
+const ListingDataContext = createContext();
+
 function ListingProvider({ children }) {
+  // Basic listing info
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [rent, setRent] = useState("");
-  const [landmark, setLandmark] = useState("");
-  const [city, setCity] = useState("");
   const [category, setCategory] = useState("");
 
-  const [backEndImage1, setBackEndImage1] = useState(null);
-  const [backEndImage2, setBackEndImage2] = useState(null);
-  const [backEndImage3, setBackEndImage3] = useState(null);
-  const [backEndImage4, setBackEndImage4] = useState(null);
-  const [backEndImage5, setBackEndImage5] = useState(null);
+  // Location info
+  const [landmark, setLandmark] = useState("");
+  const [city, setCity] = useState("");
+  const [state, setState] = useState("");
+  const [country, setCountry] = useState("");
+  const [latitude, setLatitude] = useState(null);
+  const [longitude, setLongitude] = useState(null);
 
+  // Image handling (frontend previews)
   const [frontEndImage1, setFrontEndImage1] = useState(null);
   const [frontEndImage2, setFrontEndImage2] = useState(null);
   const [frontEndImage3, setFrontEndImage3] = useState(null);
   const [frontEndImage4, setFrontEndImage4] = useState(null);
   const [frontEndImage5, setFrontEndImage5] = useState(null);
 
+  // Image handling (actual file objects for backend)
+  const [backEndImage1, setBackEndImage1] = useState(null);
+  const [backEndImage2, setBackEndImage2] = useState(null);
+  const [backEndImage3, setBackEndImage3] = useState(null);
+  const [backEndImage4, setBackEndImage4] = useState(null);
+  const [backEndImage5, setBackEndImage5] = useState(null);
+
+  // Listing state
   const [listingData, setListingData] = useState([]);
-  let [newListData , setNewListData] = useState([])
+  const [newListData, setNewListData] = useState([]);
   const [adding, setAdding] = useState(false);
+  const [cardDetails, setCardDetails] = useState(null);
+
+  // Status
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
   const navigate = useNavigate();
   const { serverUrl } = useContext(authDataContext);
-  let [cardDetails, setCardDetails]=useState(null)
 
+  // ✅ Add new listing using multipart/form-data
   const handleAddListing = async () => {
-    setAdding(true);
     try {
+      setLoading(true);
+      setError(null);
+
+      // 🧭 Geocode if no coordinates present
+      let finalLat = latitude;
+      let finalLng = longitude;
+      if (!latitude || !longitude) {
+        const fullAddress = `${landmark}, ${city}, ${state}, ${country}`;
+        const response = await axios.post(`${serverUrl}/api/geocode`, { address: fullAddress }, { withCredentials: true });
+        finalLat = response.data.latitude;
+        finalLng = response.data.longitude;
+        setLatitude(finalLat);
+        setLongitude(finalLng);
+      }
+
+      // 🧾 Construct form data for multipart submission
       const formData = new FormData();
       formData.append("title", title);
       formData.append("description", description);
       formData.append("rent", rent);
+      formData.append("category", category);
       formData.append("landmark", landmark);
       formData.append("city", city);
-      formData.append("category", category);
+      formData.append("state", state);
+      formData.append("country", country);
+      formData.append("latitude", finalLat);
+      formData.append("longitude", finalLng);
 
-      if (backEndImage1) formData.append("image1", backEndImage1);
-      if (backEndImage2) formData.append("image2", backEndImage2);
-      if (backEndImage3) formData.append("image3", backEndImage3);
-      if (backEndImage4) formData.append("image4", backEndImage4);
-      if (backEndImage5) formData.append("image5", backEndImage5);
+      // ✅ Required fields (5 images)
+      formData.append("image1", backEndImage1);
+      formData.append("image2", backEndImage2);
+      formData.append("image3", backEndImage3);
+      formData.append("image4", backEndImage4);
+      formData.append("image5", backEndImage5);
 
-      const result = await axios.post(`${serverUrl}/api/listing/add`, formData, {
+      const { data } = await axios.post(`${serverUrl}/api/listing/add`, formData, {
         withCredentials: true,
-        headers: { "Content-Type": "multipart/form-data" },
+        headers: {
+          "Content-Type": "multipart/form-data"
+        }
       });
 
-      console.log("✅ Listing created:", result.data);
-      setAdding(false);
-      navigate("/");
+      // Success
+  // ✅ Show toast and redirect
+setAdding(prev => !prev);
+toast.success("Listing created successfully! Redirecting to My Listings...");
 
-      // Reset form
-      setTitle("");
-      setDescription("");
-      setRent("");
-      setLandmark("");
-      setCity("");
-      setCategory("");
-      setFrontEndImage1(null);
-      setFrontEndImage2(null);
-      setFrontEndImage3(null);
-      setFrontEndImage4(null);
-      setFrontEndImage5(null);
-      setBackEndImage1(null);
-      setBackEndImage2(null);
-      setBackEndImage3(null);
-      setBackEndImage4(null);
-      setBackEndImage5(null);
+setTimeout(() => {
+  navigate("/mylisting");
+}, 2000); // 2 second delay
+
+resetForm();
+return data;
+
 
     } catch (error) {
-      setAdding(false);
-      console.error("❌ Error adding listing:", error);
+      console.error("Listing creation failed:", error);
+      const msg = error.response?.data?.message || error.message || "Failed to add listing";
+      setError(msg);
+      throw error;
+    } finally {
+      setLoading(false);
     }
   };
 
-const handleViewCard = async (id) => {
-  try {
-    let result = await axios.get(`${serverUrl}/api/listing/findlistingByid/${id}`, {
-      withCredentials: true
-    });
-    setCardDetails(result.data)
-    navigate("/viewcard");
-  } catch (error) {
-    console.log("getCurrentUser error:", error);
-  }
-};
+  // ✅ Reset form and images
+  const resetForm = () => {
+    setTitle("");
+    setDescription("");
+    setRent("");
+    setCategory("");
+    setLandmark("");
+    setCity("");
+    setState("");
+    setCountry("");
+    setLatitude(null);
+    setLongitude(null);
 
+    setFrontEndImage1(null);
+    setFrontEndImage2(null);
+    setFrontEndImage3(null);
+    setFrontEndImage4(null);
+    setFrontEndImage5(null);
 
+    setBackEndImage1(null);
+    setBackEndImage2(null);
+    setBackEndImage3(null);
+    setBackEndImage4(null);
+    setBackEndImage5(null);
+
+    setError(null);
+  };
+
+  // ✅ View listing card by ID
+  const handleViewCard = async (id) => {
+    try {
+      setLoading(true);
+      const res = await axios.get(`${serverUrl}/api/listing/findlistingbyid/${id}`, {
+        withCredentials: true,
+      });
+      setCardDetails(res.data);
+      navigate("/viewcard");
+    } catch (error) {
+      console.error("Error loading listing:", error);
+      setError("Failed to load listing details");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ✅ Load all listings
   const getListing = async () => {
-   try {
-    let result = await axios.get( serverUrl + "/api/listing/get", {withCredentials: true})
-    setListingData(result.data)
-    setNewListData(result.data)
-    
-   } catch (error) {
-    console.log(error)
-   }
+    try {
+      setLoading(true);
+      const res = await axios.get(`${serverUrl}/api/listing/get`, { withCredentials: true });
+      setListingData(res.data);
+      setNewListData(res.data);
+    } catch (error) {
+      console.error("Error fetching listings:", error);
+      setError("Failed to load listings");
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -110,120 +182,45 @@ const handleViewCard = async (id) => {
   }, [adding]);
 
   const value = {
+    // Form fields
     title, setTitle,
     description, setDescription,
     rent, setRent,
+    category, setCategory,
     landmark, setLandmark,
     city, setCity,
-    category, setCategory,
+    state, setState,
+    country, setCountry,
+    latitude, setLatitude,
+    longitude, setLongitude,
 
+    // Image fields
+    frontEndImage1, setFrontEndImage1,
+    frontEndImage2, setFrontEndImage2,
+    frontEndImage3, setFrontEndImage3,
+    frontEndImage4, setFrontEndImage4,
+    frontEndImage5, setFrontEndImage5,
     backEndImage1, setBackEndImage1,
     backEndImage2, setBackEndImage2,
     backEndImage3, setBackEndImage3,
     backEndImage4, setBackEndImage4,
     backEndImage5, setBackEndImage5,
 
-    frontEndImage1, setFrontEndImage1,
-    frontEndImage2, setFrontEndImage2,
-    frontEndImage3, setFrontEndImage3,
-    frontEndImage4, setFrontEndImage4,
-    frontEndImage5, setFrontEndImage5,
-
-    listingData, setListingData,
-    handleAddListing,
+    // Listing data
+    listingData,
+    newListData,
+    cardDetails, setCardDetails,
     adding, setAdding,
-    newListData , setNewListData,
-    handleViewCard,
-    cardDetails, setCardDetails
-  };
 
-  return (
-    <ListingDataContext.Provider value={value}>
-      {children}
-    </ListingDataContext.Provider>
-  );
-}
+    // Status
+    loading,
+    error, setError,
 
-// ✅ Use consistent export
-export { ListingProvider };
-export const ListingDataContext = createContext();
-
-
-{ /*import axios from "axios";
-import React, { createContext, useContext, useState } from "react";
-import { authDataContext } from "./AuthContext";
-
-// Create a context to share listing data globally
-export const ListingDataContext = createContext();
-
-// Provider component to wrap around components that need access to listing data
-export const ListingProvider = ({ children }) => {
-  // Textual listing fields
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [rent, setRent] = useState("");
-  const [landmark, setLandmark] = useState("");
-  const [city, setCity] = useState("");
-  const [category, setCategory] = useState("");
-
-  // Image states (only store File objects for uploading)
-  const [image1, setImage1] = useState(null);
-  const [image2, setImage2] = useState(null);
-  const [image3, setImage3] = useState(null);
-  const [image4, setImage4] = useState(null);
-  const [image5, setImage5] = useState(null);
-
-  // Access the server URL from auth context
-  const { serverUrl } = useContext(authDataContext);
-
-  // Function to handle adding a new listing
-  const handleAddListing = async () => {
-    try {
-      const formData = new FormData();
-
-      // Append textual fields
-      formData.append("title", title);
-      formData.append("description", description);
-      formData.append("rent", rent);
-      formData.append("landmark", landmark);
-      formData.append("city", city);
-      formData.append("category", category);
-
-      // Append images only if they exist
-      if (image1) formData.append("image1", image1);
-      if (image2) formData.append("image2", image2);
-      if (image3) formData.append("image3", image3);
-      if (image4) formData.append("image4", image4);
-      if (image5) formData.append("image5", image5);
-
-      // Send POST request to backend with the form data
-      const result = await axios.post(`${serverUrl}/api/listing/add`, formData, {
-        withCredentials: true,
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
-
-      console.log("✅ Listing created:", result.data);
-    } catch (error) {
-      console.error("❌ Error adding listing:", error);
-    }
-  };
-
-  // Values exposed to context consumers
-  const value = {
-    title, setTitle,
-    description, setDescription,
-    rent, setRent,
-    landmark, setLandmark,
-    city, setCity,
-    category, setCategory,
-    image1, setImage1,
-    image2, setImage2,
-    image3, setImage3,
-    image4, setImage4,
-    image5, setImage5,
+    // Functions
     handleAddListing,
+    resetForm,
+    handleViewCard,
+    getListing
   };
 
   return (
@@ -231,6 +228,6 @@ export const ListingProvider = ({ children }) => {
       {children}
     </ListingDataContext.Provider>
   );
-};
-*/
 }
+
+export { ListingProvider, ListingDataContext };

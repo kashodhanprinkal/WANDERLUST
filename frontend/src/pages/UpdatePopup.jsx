@@ -2,54 +2,46 @@ import React, { useState } from "react";
 import { TbXboxX } from "react-icons/tb";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import MapView from "../Component/MapView";
+import toast from "react-hot-toast";
 
-
-// Base server URL for your API
 const serverUrl = "http://localhost:8000";
 
 function UpdatePopup({ cardDetails, onClose }) {
   const navigate = useNavigate();
 
-  // Initialize all form states with existing card details or empty strings
   const [title, setTitle] = useState(cardDetails.title || "");
   const [description, setDescription] = useState(cardDetails.description || "");
   const [rent, setRent] = useState(cardDetails.rent || "");
-  const [landmark, setLandmark] = useState(cardDetails.landmark || "");
-  const [city, setCity] = useState(cardDetails.city || "");
- 
 
-  // Images to send to backend (actual File objects)
-  const [backEndImages, setBackEndImages] = useState({
-    image1: null,
-    image2: null,
-    image3: null,
-    image4: null,
-    image5: null,
-  });
-
-  // Frontend preview images (URLs)
-  const [frontEndImages, setFrontEndImages] = useState({
-    image1: cardDetails.image1 || null,
-    image2: cardDetails.image2 || null,
-    image3: cardDetails.image3 || null,
-    image4: cardDetails.image4 || null,
-    image5: cardDetails.image5 || null,
-  });
-
-  // Called when user selects a new file for an image input
-  const handleImageChange = (e, imageKey) => {
-    const file = e.target.files[0]; // grab selected file
-    if (!file) return; // if no file, do nothing
-
-    // Update the backend file object for upload
-    setBackEndImages((prev) => ({ ...prev, [imageKey]: file }));
-
-    // Create a temporary URL for preview and update frontend images state
-    setFrontEndImages((prev) => ({ ...prev, [imageKey]: URL.createObjectURL(file) }));
+  const location = {
+    landmark: cardDetails.landmark,
+    city: cardDetails.city,
+    state: cardDetails.state,
+    country: cardDetails.country,
+    lat: cardDetails.latitude,
+    lng: cardDetails.longitude
   };
 
-  // Called when form is submitted to update listing
-  const handleUpdateListing = async (e) => {
+  const category = cardDetails.category || "";
+
+  const [backEndImages, setBackEndImages] = useState({});
+  const [frontEndImages, setFrontEndImages] = useState({
+    image1: cardDetails.image1,
+    image2: cardDetails.image2,
+    image3: cardDetails.image3,
+    image4: cardDetails.image4,
+    image5: cardDetails.image5
+  });
+
+  const handleImageChange = (e, key) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setBackEndImages(prev => ({ ...prev, [key]: file }));
+    setFrontEndImages(prev => ({ ...prev, [key]: URL.createObjectURL(file) }));
+  };
+
+ const handleUpdateListing = async (e) => {
   e.preventDefault();
 
   try {
@@ -57,15 +49,19 @@ function UpdatePopup({ cardDetails, onClose }) {
     formData.append("title", title);
     formData.append("description", description);
     formData.append("rent", rent);
-    formData.append("landmark", landmark);
-    formData.append("city", city);
+
+    // 🛠️ Include all other required fields even if readonly
+    formData.append("city", location.city);
+    formData.append("state", location.state);
+    formData.append("country", location.country);
+    formData.append("landmark", location.landmark);
     formData.append("category", category);
 
     Object.entries(backEndImages).forEach(([key, file]) => {
       if (file) formData.append(key, file);
     });
 
-    const result = await axios.post(
+    const result = await axios.put(
       `${serverUrl}/api/listing/update/${cardDetails._id}`,
       formData,
       {
@@ -74,198 +70,129 @@ function UpdatePopup({ cardDetails, onClose }) {
       }
     );
 
-    console.log("✅ Listing updated:", result.data.message);
-
-    onClose();       // close popup
-    navigate("/");   // redirect to home page
-
+    toast.success("✅ Listing updated!");
+    onClose();
+    navigate("/mylisting");
   } catch (error) {
-    console.error("❌ Error updating listing:", error);
-    alert("Failed to update listing. Please try again.");
+    console.error("❌ Error updating:", error);
+    toast.error("Update failed. Try again.");
   }
 };
 
-const handleDeleteListing = async () => {
-  try {
-    const result = await axios.delete(
-      `${serverUrl}/api/listing/delete/${cardDetails._id}`,
-      {
-        withCredentials: true,
-      }
-    );
-    
-    console.log("✅ Deleted:", result.data.message);
 
-    // Optionally redirect or refresh
-    // For example, go to homepage after deletion:
-    window.location.href = "/";
-
-  } catch (error) {
-    console.error("❌ Delete failed:", error);
-    alert("Failed to delete listing.");
-  }
-};
-
+  const handleDeleteListing = async () => {
+    try {
+      await axios.delete(`${serverUrl}/api/listing/delete/${cardDetails._id}`, {
+        withCredentials: true
+      });
+      toast.success("✅ Listing deleted");
+      navigate("/");
+    } catch (error) {
+      console.error("❌ Delete failed:", error);
+      toast.error("Delete failed.");
+    }
+  };
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4"
-    >
-      <div className="relative bg-white max-w-3xl w-full rounded-2xl shadow-xl overflow-hidden flex flex-col">
-        {/* Close button on top-left */}
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+      <div className="relative bg-white max-w-4xl w-full rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-gray-200">
         <button
           onClick={onClose}
-          className="absolute top-2 left-4 w-10 h-10 bg-red-600 rounded-full flex items-center justify-center shadow hover:scale-110 transition z-20"
-          aria-label="Close"
+          className="absolute top-3 left-4 w-10 h-10 bg-red-600 rounded-full flex items-center justify-center shadow hover:scale-110 transition duration-200"
         >
           <TbXboxX className="text-white w-6 h-6" />
         </button>
 
-        {/* Header bar */}
-        <div className="sticky top-0 z-10 bg-gradient-to-r from-red-600 to-red-500 text-white text-center py-3 text-xl font-semibold shadow rounded-t-2xl">
+        <div className="bg-gradient-to-r from-red-600 to-red-500 text-white text-center py-4 text-2xl font-semibold">
           Update Your Listing
         </div>
 
-        {/* Form content with scroll if overflow */}
-        <form
-          onSubmit={handleUpdateListing}
-          className="overflow-y-auto max-h-[80vh] px-6 py-6 flex flex-col gap-6"
-        >
-          {/* Title input */}
-          <div className="flex flex-col gap-1">
-            <label htmlFor="title" className="text-base font-medium text-gray-700">
-              Title
-            </label>
-            <input
-              type="text"
-              id="title"
-              className="border border-gray-400 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-red-400"
-              required
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-            />
+        <form onSubmit={handleUpdateListing} className="overflow-y-auto max-h-[80vh] px-8 py-6 flex flex-col gap-6">
+          <div className="flex flex-col gap-2">
+            <label className="font-semibold text-gray-700">Title</label>
+            <input type="text" value={title} onChange={e => setTitle(e.target.value)} required className="input input-bordered" />
           </div>
 
-          {/* Description textarea */}
-          <div className="flex flex-col gap-1">
-            <label htmlFor="description" className="text-base font-medium text-gray-700">
-              Description
-            </label>
-            <textarea
-              id="description"
-              rows="4"
-              className="border border-gray-400 rounded-md px-4 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-red-400"
-              required
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
+          <div className="flex flex-col gap-2">
+            <label className="font-semibold text-gray-700">Description</label>
+            <textarea value={description} onChange={e => setDescription(e.target.value)} required className="input input-bordered resize-none" rows={3} />
           </div>
 
-          {/* Rent input */}
-          <div className="flex flex-col gap-1">
-            <label htmlFor="rent" className="text-base font-medium text-gray-700">
-              Rent
-            </label>
-            <input
-              type="number"
-              id="rent"
-              className="border border-gray-400 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-red-400"
-              required
-              value={rent}
-              onChange={(e) => setRent(e.target.value)}
-            />
+          <div className="flex flex-col gap-2">
+            <label className="font-semibold text-gray-700">Rent</label>
+            <input type="number" value={rent} onChange={e => setRent(e.target.value)} required className="input input-bordered" />
           </div>
 
-          {/* City input */}
-          <div className="flex flex-col gap-1">
-            <label htmlFor="city" className="text-base font-medium text-gray-700">
-              City
-            </label>
-            <input
-              type="text"
-              id="city"
-              className="border border-gray-400 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-red-400"
-              required
-              value={city}
-              onChange={(e) => setCity(e.target.value)}
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="font-semibold text-gray-700">Category</label>
+              <input type="text" value={category} disabled readOnly className="input bg-gray-100" />
+            </div>
+            <div>
+              <label className="font-semibold text-gray-700">City</label>
+              <input type="text" value={location.city} disabled readOnly className="input bg-gray-100" />
+            </div>
+            <div>
+              <label className="font-semibold text-gray-700">State</label>
+              <input type="text" value={location.state} disabled readOnly className="input bg-gray-100" />
+            </div>
+            <div>
+              <label className="font-semibold text-gray-700">Country</label>
+              <input type="text" value={location.country} disabled readOnly className="input bg-gray-100" />
+            </div>
+            <div className="col-span-2">
+              <label className="font-semibold text-gray-700">Landmark</label>
+              <input type="text" value={location.landmark} disabled readOnly className="input bg-gray-100" />
+            </div>
           </div>
 
-          {/* Landmark input */}
-          <div className="flex flex-col gap-1">
-            <label htmlFor="landmark" className="text-base font-medium text-gray-700">
-              Landmark
-            </label>
-            <input
-              type="text"
-              id="landmark"
-              className="border border-gray-400 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-red-400"
-              required
-              value={landmark}
-              onChange={(e) => setLandmark(e.target.value)}
-            />
+          <div>
+            <label className="font-semibold text-gray-700">Map View</label>
+            <div className="mt-2 rounded-lg overflow-hidden border border-gray-300 shadow-sm">
+<MapView
+  listings={
+    cardDetails.latitude !== undefined && cardDetails.longitude !== undefined
+      ? [{ ...cardDetails }]
+      : []
+  }
+/>
+
+            </div>
           </div>
 
-          {/* Category input *
-          <div className="flex flex-col gap-1">
-            <label htmlFor="category" className="text-base font-medium text-gray-700">
-              Category
-            </label>
-            <input
-              type="text"
-              id="category"
-              className="border border-gray-400 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-red-400"
-              required
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-            />
-          </div>/}
-
-          {/* Image uploads with previews */}
           {[1, 2, 3, 4, 5].map((num) => (
-            <div key={num} className="flex flex-col gap-1">
-              <label
-                htmlFor={`image${num}`}
-                className="text-base font-medium text-gray-700"
-              >
-                Image {num}
-              </label>
+            <div key={num} className="flex flex-col gap-2">
+              <label className="font-semibold text-gray-700">Image {num}</label>
               <input
                 type="file"
-                id={`image${num}`}
-                className="border border-gray-400 rounded-md px-4 py-2 text-sm"
                 onChange={(e) => handleImageChange(e, `image${num}`)}
                 accept="image/*"
+                className="file-input file-input-bordered"
               />
-              {/* Show preview only if image URL is present */}
               {frontEndImages[`image${num}`] && (
                 <img
                   src={frontEndImages[`image${num}`]}
-                  alt={`Preview ${num}`}
-                  className="mt-2 h-32 w-full object-cover rounded-md"
+                  alt="Preview"
+                  className="mt-2 h-40 w-full object-cover rounded-lg border"
                 />
               )}
             </div>
           ))}
 
-          {/* Submit button */}
-          <div className="w-full text-center gap-[40px] flex justify-center  ">
+          <div className="flex justify-center gap-6 mt-6">
             <button
               type="submit"
-              className="bg-slate-900 text-white font-semibold px-8 py-2 rounded-lg hover:bg-slate-800 transition"
+              className="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-2 rounded-lg shadow"
             >
               Update Listing
             </button>
             <button
-  type="button"
-  onClick={handleDeleteListing}
-  className="bg-red-600 text-white font-semibold px-8 py-2 rounded-lg hover:bg-red-700 transition"
->
-  Delete Listing
-</button>
-
+              type="button"
+              onClick={handleDeleteListing}
+              className="bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-2 rounded-lg shadow"
+            >
+              Delete Listing
+            </button>
           </div>
         </form>
       </div>

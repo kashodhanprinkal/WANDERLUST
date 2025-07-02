@@ -22,7 +22,7 @@ ListingRouter.get("/get",getListing)
 ListingRouter.get("/findlistingbyid/:id",isAuth,findListing)
 ListingRouter.delete("/delete/:id",isAuth,deleteListing)
 
-ListingRouter.post(
+ListingRouter.put(
   "/update/:id",
   isAuth,
   upload.fields([

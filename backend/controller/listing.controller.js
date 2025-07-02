@@ -1,7 +1,9 @@
 import uploadOnCloudinary from "../config/cloudinary.js";
 import Listing from "../model/listing.model.js";
 import User from "../model/user.model.js";
+import { getLatLngFromAddress } from "../utils/geocode.js";
 
+// ✅ CREATE Listing with Geolocation
 export const addListing = async (req, res) => {
   try {
     console.log("📦 req.body:", req.body);
@@ -9,7 +11,13 @@ export const addListing = async (req, res) => {
     console.log("🙋‍♂️ userId:", req.userId);
 
     const host = req.userId;
-    const { title, description, rent, city, landmark, category } = req.body;
+    const { title, description, rent, city, state, country, landmark, category } = req.body;
+
+    const fullAddress = `${landmark}, ${city}, ${state}, ${country}`;
+    const location = await getLatLngFromAddress(fullAddress);
+    if (!location) {
+      return res.status(400).json({ message: "Could not get geolocation from address" });
+    }
 
     const image1 = req.files?.image1?.[0] ? await uploadOnCloudinary(req.files.image1[0].path) : null;
     const image2 = req.files?.image2?.[0] ? await uploadOnCloudinary(req.files.image2[0].path) : null;
@@ -22,8 +30,12 @@ export const addListing = async (req, res) => {
       description,
       rent,
       city,
+      state,
+      country,
       landmark,
       category,
+      latitude: location.lat,
+      longitude: location.lng,
       image1: image1 ? image1.url : null,
       image2: image2 ? image2.url : null,
       image3: image3 ? image3.url : null,
@@ -49,55 +61,78 @@ export const addListing = async (req, res) => {
   }
 };
 
-export const getListing =async (req , res)=>{
+// ✅ READ - All Listings
+export const getListing = async (req, res) => {
   try {
-    let listing = await Listing.find().sort({createdAt:-1})
-    res.status(200).json(listing)
+    const listing = await Listing.find().sort({ createdAt: -1 });
+    res.status(200).json(listing);
   } catch (error) {
-    res.status(500).json({message:'getListing error $(error}'})
+    res.status(500).json({ message: `getListing error ${error}` });
   }
-}
+};
 
-export const findListing = async(req,res)=>{
+// ✅ READ - Single Listing by ID
+export const findListing = async (req, res) => {
   try {
-    let {id} = req.params
-    let listing = await Listing.findById(id)
-    if(!listing){
-      res.status(404).json({message:"listing not found"})
+    const { id } = req.params;
+    const listing = await Listing.findById(id);
+    if (!listing) {
+      return res.status(404).json({ message: "Listing not found" });
     }
-    res.status(200).json(listing)
+    res.status(200).json(listing);
   } catch (error) {
-    res.status(500).json('findListing error ${error}')
-    
+    res.status(500).json({ message: `findListing error ${error}` });
   }
-}
+};
 
+// ✅ UPDATE Listing + Update Lat/Lng if Address Changed
 export const updateListing = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, description, rent, city, landmark, category } = req.body;
+    const { title, description, rent, city, state, country, landmark, category } = req.body;
 
-    // ✅ Fetch existing listing first
     const existingListing = await Listing.findById(id);
     if (!existingListing) {
       return res.status(404).json({ message: "Listing not found" });
     }
 
-    // ✅ Upload new images if provided, else keep existing
+    // Re-geocode only if address changed
+    let newLat = existingListing.latitude;
+    let newLng = existingListing.longitude;
+
+    const addressChanged =
+      city !== existingListing.city ||
+      state !== existingListing.state ||
+      country !== existingListing.country ||
+      landmark !== existingListing.landmark;
+
+    if (addressChanged) {
+      const fullAddress = `${landmark}, ${city}, ${state}, ${country}`;
+      const location = await getLatLngFromAddress(fullAddress);
+      if (!location) {
+        return res.status(400).json({ message: "Failed to update geolocation" });
+      }
+      newLat = location.lat;
+      newLng = location.lng;
+    }
+
     const image1 = req.files?.image1?.[0] ? await uploadOnCloudinary(req.files.image1[0].path) : null;
     const image2 = req.files?.image2?.[0] ? await uploadOnCloudinary(req.files.image2[0].path) : null;
     const image3 = req.files?.image3?.[0] ? await uploadOnCloudinary(req.files.image3[0].path) : null;
     const image4 = req.files?.image4?.[0] ? await uploadOnCloudinary(req.files.image4[0].path) : null;
     const image5 = req.files?.image5?.[0] ? await uploadOnCloudinary(req.files.image5[0].path) : null;
 
-    // ✅ Prepare update payload
     const updatedData = {
       title,
       description,
       rent,
       city,
+      state,
+      country,
       landmark,
       category,
+      latitude: newLat,
+      longitude: newLng,
       image1: image1 ? image1.url : existingListing.image1,
       image2: image2 ? image2.url : existingListing.image2,
       image3: image3 ? image3.url : existingListing.image3,
@@ -114,20 +149,27 @@ export const updateListing = async (req, res) => {
   }
 };
 
+// ✅ DELETE Listing
 export const deleteListing = async (req, res) => {
-
   try {
-    let {id} = req.params
-    let listing = await Listing.findByIdAndDelete(id)
-    let user = await User.findByIdAndUpdate(listing.host,{
-      $pull:{listing:listing._id}
-    },{new:true})
-    if(!user){
-      return res.status(400).json({message:"user not found"})
+    const { id } = req.params;
+    const listing = await Listing.findByIdAndDelete(id);
+
+    const user = await User.findByIdAndUpdate(
+      listing.host,
+      { $pull: { listing: listing._id } },
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(400).json({ message: "User not found" });
     }
-    return res.status(201).json({message:"listing deleted"})
+
+    return res.status(201).json({ message: "Listing deleted" });
   } catch (error) {
-    return res.status(500).json({message:'delete listing error ${error}'})
+    return res.status(500).json({ message: `delete listing error ${error}` });
   }
-}
+};
+
+
 
