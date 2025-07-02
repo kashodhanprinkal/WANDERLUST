@@ -181,47 +181,50 @@ return data;
     getListing();
   }, [adding]);
 
-  const value = {
-    // Form fields
-    title, setTitle,
-    description, setDescription,
-    rent, setRent,
-    category, setCategory,
-    landmark, setLandmark,
-    city, setCity,
-    state, setState,
-    country, setCountry,
-    latitude, setLatitude,
-    longitude, setLongitude,
+ const value = {
+  // Form fields...
+  title, setTitle,
+  description, setDescription,
+  rent, setRent,
+  category, setCategory,
+  landmark, setLandmark,
+  city, setCity,
+  state, setState,
+  country, setCountry,
+  latitude, setLatitude,
+  longitude, setLongitude,
 
-    // Image fields
-    frontEndImage1, setFrontEndImage1,
-    frontEndImage2, setFrontEndImage2,
-    frontEndImage3, setFrontEndImage3,
-    frontEndImage4, setFrontEndImage4,
-    frontEndImage5, setFrontEndImage5,
-    backEndImage1, setBackEndImage1,
-    backEndImage2, setBackEndImage2,
-    backEndImage3, setBackEndImage3,
-    backEndImage4, setBackEndImage4,
-    backEndImage5, setBackEndImage5,
+  // Image fields...
+  frontEndImage1, setFrontEndImage1,
+  frontEndImage2, setFrontEndImage2,
+  frontEndImage3, setFrontEndImage3,
+  frontEndImage4, setFrontEndImage4,
+  frontEndImage5, setFrontEndImage5,
+  backEndImage1, setBackEndImage1,
+  backEndImage2, setBackEndImage2,
+  backEndImage3, setBackEndImage3,
+  backEndImage4, setBackEndImage4,
+  backEndImage5, setBackEndImage5,
 
-    // Listing data
-    listingData,
-    newListData,
-    cardDetails, setCardDetails,
-    adding, setAdding,
+  // Listing data
+  listingData,
+  setListingData,        // ✅ Optional, but already needed
+  newListData,
+  setNewListData,        // ✅ REQUIRED: this fixes the error
+  cardDetails, setCardDetails,
+  adding, setAdding,
 
-    // Status
-    loading,
-    error, setError,
+  // Status
+  loading,
+  error, setError,
 
-    // Functions
-    handleAddListing,
-    resetForm,
-    handleViewCard,
-    getListing
-  };
+  // Functions
+  handleAddListing,
+  resetForm,
+  handleViewCard,
+  getListing
+};
+
 
   return (
     <ListingDataContext.Provider value={value}>
