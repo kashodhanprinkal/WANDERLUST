@@ -10,6 +10,7 @@ import MyListing from './pages/MyListing';
 import ViewCard from './pages/ViewCard';
 import MyBooking from './pages/MyBooking';
 import { userDataContext } from './Context/UserContext';
+import ProfilePage from './pages/ProfilePage';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import 'leaflet/dist/leaflet.css';
@@ -53,6 +54,8 @@ function App() {
           path='/mybooking'
           element={userData ? <MyBooking /> : <Navigate to="/login" replace />}
         />
+
+        <Route path="/profile" element={<ProfilePage />} />
       </Routes>
 
       {/* ✅ Global toast support */}

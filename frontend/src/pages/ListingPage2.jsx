@@ -96,13 +96,3 @@ export default ListingPage2;
 
 
 
-{/*<div
-  className={`w-[180px] h-[100px] flex flex-col justify-center items-center cursor-pointer border-[2px] ${
-    category === "trending" ? "border-black bg-gray-100 shadow-md" : "border-transparent bg-white shadow-sm"
-  } hover:border-gray-400 text-[14px] rounded-lg transition`}
-  onClick={() => setCategory("trending")}
->
-  <FireIcon className="w-8 h-8 mb-2 text-red-500" />
-  Trending
-</div>
-*/ }

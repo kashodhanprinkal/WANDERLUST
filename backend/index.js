@@ -26,6 +26,9 @@ app.use(cors({
   credentials:true
 }))
 
+// ✅ Serve uploaded avatars
+app.use('/uploads', express.static('public/uploads'));
+
 // Routes
 app.use("/api/auth", authRouter);
 app.use("/api/user", userRouter);

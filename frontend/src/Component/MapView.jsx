@@ -2,9 +2,9 @@ import React from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { useMap as useMapContext, MapProvider } from "../Context/MapContext"; // Renamed useMap to useMapContext
+import { useMap as useMapContext } from "../Context/MapContext"; // Optional context use
 
-// Fix default icon issue
+// Fix Leaflet's default icon issue
 const DefaultIcon = L.icon({
   iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
@@ -12,7 +12,7 @@ const DefaultIcon = L.icon({
 });
 L.Marker.prototype.options.icon = DefaultIcon;
 
-// ➕ Safe context fallback
+// Optional context fallback (not required for this case)
 const useSafeMapContext = () => {
   try {
     const context = useMapContext();
@@ -32,7 +32,7 @@ const useSafeMapContext = () => {
   }
 };
 
-// 🔄 Updates map center on change
+// 🗺️ Center updater
 const MapUpdater = ({ center }) => {
   const map = useMap();
   React.useEffect(() => {
@@ -44,14 +44,10 @@ const MapUpdater = ({ center }) => {
 };
 
 const MapView = ({ listings = [] }) => {
-  const { location } = useSafeMapContext();
-
   const center =
-    location.lat && location.lng
-      ? [location.lat, location.lng]
-      : listings[0]
-        ? [listings[0].latitude, listings[0].longitude]
-        : null;
+    listings.length > 0
+      ? [listings[0].latitude, listings[0].longitude]
+      : null;
 
   if (!center) {
     return <p className="text-red-500">📍 Location unavailable</p>;
@@ -61,12 +57,10 @@ const MapView = ({ listings = [] }) => {
     <MapContainer
       center={center}
       zoom={13}
-      scrollWheelZoom={false}
+      scrollWheelZoom={true}
       style={{
-        height: "300px",
+        height: "350px",
         width: "100%",
-        borderRadius: "1rem",
-        marginTop: "1rem",
       }}
     >
       <TileLayer
@@ -74,18 +68,6 @@ const MapView = ({ listings = [] }) => {
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
 
-      {/* Marker for current location */}
-      {location.lat && location.lng && (
-        <Marker position={[location.lat, location.lng]}>
-          <Popup>
-            {location.landmark && <div className="font-bold">{location.landmark}</div>}
-            <div>{location.city}, {location.state}</div>
-            <div>{location.country}</div>
-          </Popup>
-        </Marker>
-      )}
-
-      {/* Additional listings */}
       {listings.map((listing, index) => (
         <Marker
           key={index}
@@ -93,7 +75,10 @@ const MapView = ({ listings = [] }) => {
         >
           <Popup>
             <div className="font-bold">{listing.title}</div>
-            <div>₹{listing.rent}/month</div>
+            <div>Rent: ₹{listing.rent} / day</div>
+            <div className="text-sm mt-1 text-gray-600">
+              {listing.landmark}, {listing.city}, {listing.state}, {listing.country}
+            </div>
           </Popup>
         </Marker>
       ))}

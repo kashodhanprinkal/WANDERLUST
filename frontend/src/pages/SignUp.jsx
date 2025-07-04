@@ -50,7 +50,9 @@ setLoading(false)
       setUserData(result.data);
 
       // Redirect to home page on successful signup
-      navigate("/");
+      // inside signup success:
+navigate("/profile"); // ✅ send them to profile
+
 
       console.log("Sign-up successful:", result.data);
     } catch (error) {

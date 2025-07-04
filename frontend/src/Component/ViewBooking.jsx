@@ -1,7 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import toast from 'react-hot-toast';
+import ProfileModal from './ProfileModal'; // Ensure this component exists
 
 const ViewBooking = ({ listing, bookings, onClose, onCancel }) => {
+  const [showProfile, setShowProfile] = useState(false);
+  const [selectedGuestId, setSelectedGuestId] = useState(null);
+
+  const handleProfileOpen = (userId) => {
+    setSelectedGuestId(userId);
+    setShowProfile(true);
+  };
+
   const getStatusBadge = (status) => {
     const badgeStyles = {
       booked: 'bg-blue-100 text-blue-700',
@@ -44,7 +53,12 @@ const ViewBooking = ({ listing, bookings, onClose, onCancel }) => {
                 className="bg-gray-50 p-4 rounded border border-gray-200"
               >
                 <div className="flex justify-between items-center mb-1">
-                  <span className="font-semibold">{b.guest.name}</span>
+                  <button
+                    className="text-blue-600 hover:underline font-semibold text-left"
+                    onClick={() => handleProfileOpen(b.guest._id)}
+                  >
+                    {b.guest.name}
+                  </button>
                   {getStatusBadge(b.status)}
                 </div>
 
@@ -84,12 +98,21 @@ const ViewBooking = ({ listing, bookings, onClose, onCancel }) => {
                   </button>
                 ) : (
                   <p className="text-xs italic text-gray-400 mt-1">
-                    Too late to cancel
+                    ⏳ Too late to cancel
                   </p>
                 )}
               </div>
             ))}
           </div>
+        )}
+
+        {/* Profile Preview Modal */}
+        {showProfile && selectedGuestId && (
+          <ProfileModal
+            userId={selectedGuestId}
+            onClose={() => setShowProfile(false)}
+            serverUrl="http://localhost:8000"
+          />
         )}
       </div>
     </div>

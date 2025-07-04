@@ -1,11 +1,11 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { FaArrowLeft } from "react-icons/fa";
+import { FaArrowLeft, FaStar, FaBan } from "react-icons/fa6";
 import { useNavigate } from "react-router-dom";
 import { userDataContext } from '../Context/UserContext';
 import { authDataContext } from '../Context/AuthContext';
 import { ReviewContext } from '../Context/ReviewContext';
 import ReviewPopup from '../component/ReviewPopup';
-import { FaStar, FaBan } from "react-icons/fa6";
+import ProfileModal from '../component/ProfileModal';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -18,8 +18,10 @@ function MyBooking() {
 
   const [activeListingId, setActiveListingId] = useState(null);
   const [popupData, setPopupData] = useState({});
+  const [selectedUserId, setSelectedUserId] = useState(null);
+  const [showModal, setShowModal] = useState(false);
 
-  // ✅ Update status if booking is done
+  // 🔄 Update statuses (like "done") on mount
   useEffect(() => {
     const updateBookingStatusIfDone = async () => {
       try {
@@ -32,27 +34,25 @@ function MyBooking() {
     updateBookingStatusIfDone();
   }, []);
 
-  // ✅ Open Review Modal
- const openReviewPopup = async (listingId) => {
-  const reviews = await fetchReviews(listingId); // ✅ use the latest reviews
-  const guestReview = reviews.find(r => r.guest._id === userData._id); // ✅ correct review
-  setPopupData({ listingId, guestReview }); // ✅ store correct review in popupData
-  setActiveListingId(listingId);
-};
+  // ✍️ Open Review Modal
+  const openReviewPopup = async (listingId) => {
+    const reviews = await fetchReviews(listingId);
+    const guestReview = reviews.find(r => r.guest && r.guest._id === userData._id);
+    setPopupData({ listingId, guestReview });
+    setActiveListingId(listingId);
+  };
 
-
-  // ✅ Submit Review
+  // 📩 Submit review (new or update)
   const handleReviewSubmit = async ({ rating, reviewText }) => {
-  const { guestReview } = popupData;
-  if (guestReview) {
-    await updateReview(guestReview._id, { rating, reviewText }, activeListingId);
-  } else {
-    await createReview(activeListingId, { rating, reviewText });
-  }
-};
+    const { guestReview } = popupData;
+    if (guestReview) {
+      await updateReview(guestReview._id, { rating, reviewText }, activeListingId);
+    } else {
+      await createReview(activeListingId, { rating, reviewText });
+    }
+  };
 
-
-  // ✅ Delete Review
+  // 🗑️ Delete review
   const handleReviewDelete = async () => {
     const { guestReview } = popupData;
     if (guestReview) {
@@ -60,16 +60,12 @@ function MyBooking() {
     }
   };
 
-  // ✅ Cancel Booking
+  // ❌ Cancel Booking
   const handleCancel = async (bookingId) => {
     try {
       const confirm = window.confirm("Are you sure you want to cancel this booking?");
       if (!confirm) return;
-
-      const res = await axios.delete(`${serverUrl}/api/booking/cancel/${bookingId}`, {
-        withCredentials: true
-      });
-
+      const res = await axios.delete(`${serverUrl}/api/booking/cancel/${bookingId}`, { withCredentials: true });
       await reloadUser();
       toast.success(res.data.message || "Booking cancelled successfully!");
     } catch (err) {
@@ -80,58 +76,72 @@ function MyBooking() {
 
   return (
     <div className='w-full min-h-screen flex flex-col items-center p-4 bg-gray-50'>
-      {/* Back Button */}
-      <div
-        className="w-12 h-12 bg-red-600 cursor-pointer rounded-full flex items-center justify-center fixed top-4 left-4"
+
+      {/* 🔙 Back Button */}
+      <button
         onClick={() => navigate("/")}
+        className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center fixed top-4 left-4"
       >
-        <FaArrowLeft className="w-6 h-6 text-white" />
-      </div>
+        <FaArrowLeft className="text-white w-6 h-6" />
+      </button>
 
       <h1 className="text-3xl font-bold text-gray-800 mt-16 mb-6">Your Bookings</h1>
 
+      {/* 🔄 Booking List */}
       {userData?.booking?.length === 0 ? (
         <p className="text-gray-600">No bookings yet!</p>
       ) : (
         <div className="grid gap-6 w-full max-w-4xl">
           {userData.booking.map((booking) => {
-            const listingId = booking.listing?._id;
-            const reviewsForListing = allReviews[listingId] || [];
-            const guestReview = reviewsForListing.find(r => r.guest._id === userData._id);
+            const listing = booking.listing;
+            const host = listing?.host;
+            const listingId = listing?._id;
+            const guestReview = (allReviews[listingId] || []).find(
+              r => r.guest && r.guest._id === userData._id
+            );
 
             return (
               <div
                 key={booking._id}
-                className="border rounded-xl shadow-sm p-4 bg-white hover:shadow-md transition relative group"
+                className="border rounded-xl shadow-sm p-4 bg-white hover:shadow-md transition"
               >
-                {/* Listing Info */}
+                {/* 🏠 Listing Info */}
                 <div className="flex gap-4">
                   <img
-                    src={booking.listing?.image1 || "/fallback.jpg"}
-                    alt={booking.listing?.title}
+                    src={listing?.image1 || "/fallback.jpg"}
+                    alt={listing?.title}
                     className="w-32 h-32 object-cover rounded-lg"
                   />
                   <div className="flex-1">
-                    <h2 className="text-xl font-semibold text-gray-800">{booking.listing?.title}</h2>
-                    <p className="text-sm text-gray-500">{booking.listing?.city}, {booking.listing?.landmark}</p>
-                    <p className="text-sm text-gray-500">Category: {booking.listing?.category}</p>
-                    <p className="text-sm text-gray-500">Host: {booking.listing?.host?.name || booking.host}</p>
+                    <h2 className="text-xl font-semibold text-gray-800">{listing?.title}</h2>
+                    <p className="text-sm text-gray-500">{listing?.city}, {listing?.landmark}</p>
+                    <p className="text-sm text-gray-500">Category: {listing?.category}</p>
+                    {host && (
+                      <p
+                        className="text-sm text-blue-600 underline cursor-pointer mt-1"
+                        onClick={() => {
+                          setSelectedUserId(host._id);
+                          setShowModal(true);
+                        }}
+                      >
+                        View Host
+                      </p>
+                    )}
                   </div>
                 </div>
 
-                {/* Booking Meta */}
+                {/* 📅 Booking Info */}
                 <div className="mt-4 grid grid-cols-2 gap-2 text-sm text-gray-700">
                   <p><strong>Check-in:</strong> {new Date(booking.checkIn).toLocaleDateString()}</p>
                   <p><strong>Check-out:</strong> {new Date(booking.checkOut).toLocaleDateString()}</p>
                   <p><strong>Total Rent:</strong> ₹{booking.totalRent}</p>
                   <p>
                     <strong>Status:</strong>{" "}
-                    <span className={`font-semibold ${booking.status === "done"
-                        ? "text-green-600"
-                        : booking.status === "cancelled"
-                          ? "text-red-600"
-                          : "text-blue-600"
-                      }`}>
+                    <span className={`font-semibold ${
+                      booking.status === "done" ? "text-green-600"
+                        : booking.status === "cancelled" ? "text-red-600"
+                        : "text-blue-600"
+                    }`}>
                       {booking.status === "cancelled"
                         ? `Cancelled by ${booking.cancelledBy === "host" ? "Host" : "You"}`
                         : booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
@@ -140,9 +150,9 @@ function MyBooking() {
                   <p><strong>Booked On:</strong> {new Date(booking.createdAt).toLocaleDateString()}</p>
                 </div>
 
-                {/* ✅ Cancel Button (only if status is booked) */}
+                {/* ❌ Cancel Button */}
                 {booking.status === "booked" && (
-                  <div className="mt-4 flex gap-2 items-center">
+                  <div className="mt-4">
                     <button
                       onClick={() => handleCancel(booking._id)}
                       className="flex items-center gap-1 text-white bg-red-500 hover:bg-red-600 transition px-3 py-1 rounded-full"
@@ -152,7 +162,7 @@ function MyBooking() {
                   </div>
                 )}
 
-                {/* Review Section */}
+                {/* ⭐ Review Section */}
                 {booking.status === "done" && (
                   <div className="mt-4 text-sm text-gray-800">
                     {!guestReview ? (
@@ -190,7 +200,7 @@ function MyBooking() {
         </div>
       )}
 
-      {/* Review Modal */}
+      {/* ✍️ Review Popup */}
       {activeListingId && (
         <ReviewPopup
           listingId={activeListingId}
@@ -198,6 +208,18 @@ function MyBooking() {
           onSubmit={handleReviewSubmit}
           onDelete={handleReviewDelete}
           onClose={() => setActiveListingId(null)}
+        />
+      )}
+
+      {/* 👤 Host Profile Modal */}
+      {showModal && selectedUserId && (
+        <ProfileModal
+          userId={selectedUserId}
+          serverUrl={serverUrl} // ✅ important fix
+          onClose={() => {
+            setSelectedUserId(null);
+            setShowModal(false);
+          }}
         />
       )}
     </div>
