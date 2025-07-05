@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { authDataContext } from '../context/AuthContext';
 import { userDataContext } from '../context/UserContext';
 
+
 const SOCIAL_CONFIG = {
   instagram: {
     url: 'https://cdn.jsdelivr.net/npm/simple-icons@v8/icons/instagram.svg',
@@ -140,8 +141,11 @@ const ProfilePage = () => {
     }
   };
 
-  return (
-    <div className="min-h-screen bg-gray-100 py-10 px-4 flex justify-center">
+return (
+  <>
+  
+
+    <div className="min-h-screen py-10 px-4 flex justify-center">
       <div className="max-w-3xl w-full bg-white shadow-md rounded-lg p-6 md:p-8">
         <h1 className="text-2xl md:text-3xl font-semibold mb-6 text-center text-gray-800">👤 Complete Your Profile</h1>
 
@@ -158,8 +162,9 @@ const ProfilePage = () => {
           </div>
         )}
 
+        {/* Form begins */}
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Avatar */}
+          {/* Avatar Upload */}
           <div className="flex items-center gap-4">
             <div className="relative">
               <img
@@ -180,7 +185,7 @@ const ProfilePage = () => {
             <p className="text-sm text-gray-500">JPG, PNG under 5MB</p>
           </div>
 
-          {/* Name + Phone */}
+          {/* Name and Phone */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium text-gray-700">Full Name *</label>
@@ -247,18 +252,18 @@ const ProfilePage = () => {
             </div>
           </div>
 
-          {/* Submit */}
+          {/* Submit Button */}
           <button
             type="submit"
             disabled={isLoading}
-            className={`w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition duration-200 ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
+            className={`w-full bg-red-600 text-white py-2 rounded-md hover:bg-red-700 transition duration-200 ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
           >
             {isLoading ? 'Saving...' : 'Save Profile'}
           </button>
         </form>
       </div>
     </div>
-  );
-};
-
+  </>
+);
+}
 export default ProfilePage;

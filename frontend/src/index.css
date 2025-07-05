@@ -1,6 +1,10 @@
+@import 'nprogress/nprogress.css';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+
+
 
 input, textarea {
   transition: border-color 0.2s, box-shadow 0.2s;
@@ -9,4 +13,17 @@ input, textarea {
 button:disabled {
   opacity: 0.7;
   cursor: not-allowed;
+}
+
+#nprogress .bar {
+  background: #dc2626; /* red-600 */
+  height: 3px;
+}
+
+#nprogress .peg {
+  box-shadow: 0 0 10px #dc2626, 0 0 5px #dc2626;
+}
+
+#nprogress .spinner {
+  display: none;
 }

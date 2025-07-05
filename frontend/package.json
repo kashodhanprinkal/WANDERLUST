@@ -17,6 +17,7 @@
     "icons": "^1.0.0",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.511.0",
+    "nprogress": "^0.2.0",
     "react": "^19.1.0",
     "react-date-range": "^2.0.1",
     "react-dom": "^19.0.0",
