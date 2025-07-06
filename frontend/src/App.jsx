@@ -19,6 +19,8 @@ import ViewCard from './pages/ViewCard';
 import MyBooking from './pages/MyBooking';
 import ProfilePage from './pages/ProfilePage';
 
+import Notifications from './pages/Notifications';
+
 function App() {
   const { userData } = useContext(userDataContext);
 
@@ -59,6 +61,10 @@ function App() {
           element={userData ? <MyBooking /> : <Navigate to="/login" replace />}
         />
         <Route path="/profile" element={<ProfilePage />} />
+
+        
+      {/* your other routes */}
+      <Route path="/notifications" element={<Notifications />} />
       </Routes>
 
       <ToastContainer

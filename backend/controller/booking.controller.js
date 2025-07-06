@@ -2,6 +2,8 @@ import mongoose from "mongoose";
 import Booking from "../model/booking.model.js";
 import Listing from "../model/listing.model.js";
 import User from "../model/user.model.js";
+import createNotification from "../utils/createNotification.js"
+
 
 // ✅ CREATE BOOKING
 export const createBooking = async (req, res) => {
@@ -74,6 +76,15 @@ export const createBooking = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
+    // 🔔 Notify the host about the new booking
+await createNotification({
+  recipient: listing.host,             // Host who should be notified
+  sender: userId,                      // Guest who booked
+  type: "booking",
+  message: `📅 New booking for "${listing.title}"`,
+  listing: listing._id,
+});
+
 
     return res.status(201).json({
       message: "Booking is created",
@@ -86,7 +97,7 @@ export const createBooking = async (req, res) => {
   }
 };
 
-// ❌ FIXED CANCEL BOOKING
+// ✅ CANCEL BOOKING with notification
 export const cancelBooking = async (req, res) => {
   try {
     const { id } = req.params;
@@ -107,18 +118,23 @@ export const cancelBooking = async (req, res) => {
     } else if (currentUserId === listingHostId) {
       cancelledBy = "host";
     } else {
-      return res.status(403).json({ message: "You are not authorized to cancel this booking." });
+      return res.status(403).json({ message: "Not authorized to cancel" });
     }
 
-    // ❌ DON'T remove from user's bookings – this causes it to disappear from MyBookings
-    // await User.findByIdAndUpdate(guestId, {
-    //   $pull: { booking: booking._id },
-    // });
-
-    // ✅ Mark as cancelled and set who cancelled
+    // ✅ Update status
     booking.status = "cancelled";
     booking.cancelledBy = cancelledBy;
     await booking.save();
+
+    // ✅ Notify guest
+    const notifyRecipient = cancelledBy === "guest" ? listingHostId : guestId;
+    await createNotification({
+      recipient: notifyRecipient,
+      sender: currentUserId,
+      type: "cancellation",
+      message: `Booking for ${booking.listing.title} was cancelled by ${cancelledBy}`,
+      listing: booking.listing._id,
+    });
 
     return res.status(200).json({ message: `Booking cancelled by ${cancelledBy}` });
 
@@ -127,9 +143,6 @@ export const cancelBooking = async (req, res) => {
     return res.status(500).json({ message: "Booking cancel error" });
   }
 };
-
-
-
 
 
 // ✅ UPDATE STATUS TO 'DONE' AFTER CHECKOUT
@@ -193,7 +206,6 @@ export const getUnavailableDates = async (req, res) => {
     res.status(500).json({ message: "Failed to get unavailable dates" });
   }
 };
-
 // ✅ GET BOOKINGS BY HOST
 export const getBookingsByHost = async (req, res) => {
   try {

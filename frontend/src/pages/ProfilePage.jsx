@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import { authDataContext } from '../context/AuthContext';
 import { userDataContext } from '../context/UserContext';
+import MainNav from '../Component/Navbar/MainNav';
 
 
 const SOCIAL_CONFIG = {
@@ -143,7 +144,7 @@ const ProfilePage = () => {
 
 return (
   <>
-  
+  <MainNav/>
 
     <div className="min-h-screen py-10 px-4 flex justify-center">
       <div className="max-w-3xl w-full bg-white shadow-md rounded-lg p-6 md:p-8">

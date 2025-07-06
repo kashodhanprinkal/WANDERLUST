@@ -9,7 +9,7 @@ import ListingRouter from "./routes/listing.route.js";
 import bookingRouter from "./routes/booking.route.js";
 import reviewRouter from './routes/review.route.js';
 import geocodeRouter from "./routes/geocode.route.js";
-
+import notificationRouter from "./routes/notification.route.js";
 
 
 
@@ -36,6 +36,7 @@ app.use("/api/listing", ListingRouter);
 app.use("/api/booking", bookingRouter);
 app.use("/api/review", reviewRouter);
 app.use("/api/geocode", geocodeRouter);
+app.use("/api/notification",notificationRouter)
 
 app.get("/", (req, res) => {
   res.send("Hello from Prinkal");

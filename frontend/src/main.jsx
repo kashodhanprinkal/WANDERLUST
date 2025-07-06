@@ -8,6 +8,7 @@ import UserContext from './Context/UserContext.jsx';
 import { ListingProvider } from './Context/ListingContext.jsx'; // ✅ Corrected import
 import BookingContext from './Context/BookingContext.jsx';
 import ReviewContext from './Context/ReviewContext.jsx';
+import {NotificationProvider} from './Context/NotificationContext.jsx';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -17,8 +18,11 @@ createRoot(document.getElementById('root')).render(
           <UserContext>
             <BookingContext>
               <ReviewContext>
+                <NotificationProvider>
+
 
             <App />
+                </NotificationProvider>
               </ReviewContext>
             </BookingContext>
           </UserContext>
