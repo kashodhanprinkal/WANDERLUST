@@ -74,7 +74,10 @@ handleSearch()
       )}
     <SearchBarMobile handleSearch={handleSearch} />
 
-      <CategoryBar cate={cate} handleCategory={handleCategory} />
+       {/* ✅ Only show CategoryBar on home page */}
+      {location.pathname === "/" && (
+        <CategoryBar cate={cate} handleCategory={handleCategory} />
+      )}
     </div>
   );
 }
