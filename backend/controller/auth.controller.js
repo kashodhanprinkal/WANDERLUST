@@ -14,8 +14,8 @@ export const signUp = async (req,res)=>{
         let token = genToken(user._id)
         res.cookie("token",token, {
             httpOnly:true,
-            secure:true
-            sameSite : "",
+            secure:true,
+            sameSite : "None",
             maxAge: 7 * 24 *60 *60 *1000
         })
         return res.status(201).json(user)
@@ -42,8 +42,8 @@ export const login = async (req, res) => {
         let token = genToken(user._id);
         res.cookie("token", token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "lax",
+            secure: true,
+            sameSite: "None",
             maxAge: 7 * 24 * 60 * 60 * 1000
         });
 
