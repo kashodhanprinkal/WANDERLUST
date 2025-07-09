@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { userDataContext } from '../Context/UserContext';
-import ViewBooking from '../component/ViewBooking';
+import ViewBooking from '../Component/ViewBooking';
 
 function MyListing() {
   const navigate = useNavigate();
