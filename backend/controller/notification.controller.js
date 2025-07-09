@@ -3,19 +3,15 @@ import Notification from "../model/notification.model.js";
 // ✅ Get all notifications for the current user (latest first)
 export const getMyNotifications = async (req, res) => {
   try {
-    console.log("🔐 Current user ID in request:", req.userId); // Should show userId
     const userId = req.userId;
 
     const notifications = await Notification.find({ recipient: userId })
       .populate("sender", "name avatar")
-       .populate("listing", "title landmark city state country") // 👈 update here
+      .populate("listing", "title landmark city state country")
       .sort({ createdAt: -1 });
-
-    console.log("📤 Notifications sent:", notifications);
 
     res.status(200).json(notifications);
   } catch (err) {
-    console.error("❌ Error in getMyNotifications:", err.message);
     res.status(500).json({ message: "Failed to fetch notifications" });
   }
 };

@@ -5,6 +5,7 @@ import { authDataContext } from "./AuthContext";
 import { toast } from "react-toastify";
 import 'react-toastify/dist/ReactToastify.css';
 
+
 const ListingDataContext = createContext();
 
 function ListingProvider({ children }) {
@@ -41,6 +42,14 @@ function ListingProvider({ children }) {
   const [newListData, setNewListData] = useState([]);
   const [adding, setAdding] = useState(false);
   const [cardDetails, setCardDetails] = useState(null);
+  const [searchData, setSearchData]= useState(null)
+const handleReset = () => {
+  setSearchData(null);            
+  setNewListData(listingData);   
+  toast.success("Reset to all listings ✈️");
+};
+
+
 
   // Status
   const [loading, setLoading] = useState(false);
@@ -162,6 +171,26 @@ return data;
     }
   };
 
+
+const handleSearch = async (query) => {
+  if (!query || query.trim() === "") {
+    setSearchData(null); // 🔄 Reset to default
+    return;
+  }
+
+  try {
+    const res = await axios.get(`${serverUrl}/api/listing/search?query=${query}`);
+    setSearchData(res.data);
+  } catch (error) {
+    console.log("Search error:", error);
+    setSearchData([]); // ❌ If error or not found, clear result
+  }
+};
+
+
+
+
+
   // ✅ Load all listings
   const getListing = async () => {
     try {
@@ -176,6 +205,7 @@ return data;
       setLoading(false);
     }
   };
+
 
   useEffect(() => {
     getListing();
@@ -213,7 +243,7 @@ return data;
   setNewListData,        // ✅ REQUIRED: this fixes the error
   cardDetails, setCardDetails,
   adding, setAdding,
-
+searchData, setSearchData,
   // Status
   loading,
   error, setError,
@@ -222,7 +252,9 @@ return data;
   handleAddListing,
   resetForm,
   handleViewCard,
-  getListing
+  getListing,
+  handleSearch,
+  handleReset,
 };
 
 

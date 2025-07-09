@@ -48,14 +48,14 @@ function Card({
 
   return (
     <div
-      className="w-full sm:w-[250px] max-w-[90%] h-[350px] flex flex-col rounded-lg cursor-pointer shadow-md bg-white mt-[140px] z-0"
+      className="w-full sm:w-[270px] max-w-[90%] h-[380px] rounded-2xl bg-white shadow-lg hover:shadow-xl transition duration-300 cursor-pointer overflow-hidden transform hover:scale-[1.02] mt-[20px] sm:mt-[30px]"
       onClick={handleClick}
     >
-      {/* Image Slider */}
-      <div className="relative w-full h-[67%] bg-slate-200 rounded-lg overflow-hidden">
-        {/* ✅ Booked Label - Only for active bookings */}
+      {/* Image Section */}
+      <div className="relative w-full h-[64%] bg-gray-200">
+        {/* Booked Badge */}
         {isBookedByUser && (
-          <div className="absolute top-2 right-2 bg-white text-green-700 flex items-center gap-1 px-2 py-[2px] rounded-full shadow-md text-xs font-semibold z-10">
+          <div className="absolute top-2 right-2 bg-white text-green-700 flex items-center gap-1 px-2 py-[2px] rounded-full shadow text-xs font-semibold z-10">
             <IoCheckmarkDoneCircleSharp className="w-4 h-4 text-green-600" />
             Booked
           </div>
@@ -63,7 +63,7 @@ function Card({
 
         <img
           src={validImages[currentIndex]}
-          alt={`Image ${currentIndex + 1} for ${title}`}
+          alt={title}
           onError={(e) => {
             e.target.onerror = null;
             e.target.src = "/fallback.jpg";
@@ -79,7 +79,7 @@ function Card({
                 e.stopPropagation();
                 prevImage();
               }}
-              className="absolute top-1/2 left-2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-1 rounded-full z-10"
+              className="absolute top-1/2 left-2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-1 rounded-full"
             >
               <ChevronLeft size={20} />
             </button>
@@ -88,7 +88,7 @@ function Card({
                 e.stopPropagation();
                 nextImage();
               }}
-              className="absolute top-1/2 right-2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-1 rounded-full z-10"
+              className="absolute top-1/2 right-2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-1 rounded-full"
             >
               <ChevronRight size={20} />
             </button>
@@ -106,19 +106,19 @@ function Card({
         </div>
       </div>
 
-      {/* Info */}
-      <div className="p-2 text-sm">
+      {/* Text Info */}
+      <div className="p-3 text-sm flex flex-col gap-1">
         <div className="flex items-center justify-between">
-          <h2 className="font-bold text-lg">{title}</h2>
-          <div className="flex items-center text-red-600 text-lg">
+          <h2 className="font-semibold text-base md:text-lg truncate">{title}</h2>
+         <div className="flex items-center text-red-600 text-lg">
             <FaRegStar />
             <span className="ml-1">{ratings}</span>
           </div>
         </div>
-        <p><strong>City:</strong> {city}</p>
-        <p><strong>Landmark:</strong> {landmark}</p>
-        <p><strong>Category:</strong> {category}</p>
-        <p><strong>Rent:</strong> ₹{rent}/per day</p>
+        <p className="text-gray-700"><strong>City:</strong> {city}</p>
+        <p className="text-gray-700"><strong>Landmark:</strong> {landmark}</p>
+        <p className="text-gray-700"><strong>Category:</strong> {category}</p>
+        <p className="text-gray-800 font-semibold"><strong>Rent:</strong> ₹{rent}/day</p>
       </div>
     </div>
   );

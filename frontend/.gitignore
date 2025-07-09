@@ -4,39 +4,41 @@ logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# dotenv
+.env
+.env.*  # ignore all .env files like .env.development
 
 # Dependency directories
 node_modules/
+backend/node_modules/
+frontend/node_modules/
 
-# Vite and build output
+# Build output
 dist/
-dist-ssr/
-.vite/
-.vite-cache/
+build/
 
-# Local env files
-.env.local
-.env.*.local
-
-# Editor configs
-.vscode/*
-!.vscode/extensions.json
+# Editor folders
+.vscode/
 .idea/
-.DS_Store
-
-# Windows + IDE specific
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
-*.sw?
 
-# OneDrive sync conflicts (optional)
-*.tmp
-~$*
+# System
+*.swp
+*.lock
 
-# Optional: OS file metadata (for safety)
-Thumbs.db
-ehthumbs.db
+# Uploads / static files
+backend/public/uploads/
+
+# Optional caches
+.cache/
+.next/
+out/
+coverage/

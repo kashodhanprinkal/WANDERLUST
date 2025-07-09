@@ -12,7 +12,7 @@ if (!fs.existsSync(uploadDir)) {
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, uploadDir); // Now uses the ensured uploads subdirectory
+    cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
@@ -35,7 +35,7 @@ const fileFilter = (req, file, cb) => {
 
 const limits = {
   fileSize: 5 * 1024 * 1024, // 5MB
-  files: 1 // Single file uploads only
+  files: 5                   // ✅ allow up to 5 images
 };
 
 const upload = multer({

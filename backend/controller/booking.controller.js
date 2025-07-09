@@ -3,6 +3,8 @@ import Booking from "../model/booking.model.js";
 import Listing from "../model/listing.model.js";
 import User from "../model/user.model.js";
 import createNotification from "../utils/createNotification.js"
+import sendEmail from "../utils/sendEmail.js";
+
 
 
 // ✅ CREATE BOOKING
@@ -10,24 +12,15 @@ export const createBooking = async (req, res) => {
   try {
     const { id } = req.params; // Listing ID
     const { checkIn, checkOut, totalRent } = req.body;
-    const userId = req.userId; // From isAuth middleware
+    const userId = req.userId;
 
-    console.log("✅ Authenticated userId:", userId);
-    console.log("💬 Incoming booking data:", { id, checkIn, checkOut, totalRent });
-
-    // Validate listing
     const listing = await Listing.findById(id);
-    if (!listing) {
-      return res.status(404).json({ message: "Listing not found" });
-    }
+    if (!listing) return res.status(404).json({ message: "Listing not found" });
 
-    // Validate dates
-    if (new Date(checkIn) >= new Date(checkOut)) {
-      return res.status(400).json({ message: "Invalid check-in and check-out dates" });
-    }
+    if (new Date(checkIn) >= new Date(checkOut))
+      return res.status(400).json({ message: "Invalid dates" });
 
-    // 🔍 Check for overlapping bookings
-    const conflictingBooking = await Booking.findOne({
+    const conflict = await Booking.findOne({
       listing: id,
       $or: [
         {
@@ -37,54 +30,58 @@ export const createBooking = async (req, res) => {
       ],
     });
 
-    if (conflictingBooking) {
-      return res.status(400).json({ message: "Listing is already booked for selected dates" });
-    }
+    if (conflict) return res.status(400).json({ message: "Listing is already booked for these dates" });
 
-    // Prevent duplicate exact bookings by the same user
-    const existingBooking = await Booking.findOne({
+    const duplicate = await Booking.findOne({
       listing: id,
       guest: userId,
       checkIn: new Date(checkIn),
       checkOut: new Date(checkOut),
     });
 
-    if (existingBooking) {
+    if (duplicate)
       return res.status(400).json({ message: "You have already booked this listing for these dates" });
-    }
 
-    // ✅ Create the booking
     const booking = await Booking.create({
       checkIn,
       checkOut,
       totalRent,
-      host: new mongoose.Types.ObjectId(listing.host),
-      guest: new mongoose.Types.ObjectId(userId),
-      listing: new mongoose.Types.ObjectId(listing._id),
-      status: "booked", // 👈 Make sure this is set
+      host: listing.host,
+      guest: userId,
+      listing: listing._id,
+      status: "booked",
     });
 
-    console.log("✅ Booking created:", booking);
-
-    // ✅ Add booking to user
     const user = await User.findByIdAndUpdate(
       userId,
       { $push: { booking: booking._id } },
       { new: true }
     );
 
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-    // 🔔 Notify the host about the new booking
-await createNotification({
-  recipient: listing.host,             // Host who should be notified
-  sender: userId,                      // Guest who booked
-  type: "booking",
-  message: `📅 New booking for "${listing.title}"`,
-  listing: listing._id,
-});
+    await createNotification({
+      recipient: listing.host,
+      sender: userId,
+      type: "booking",
+      message: `📅 New booking for "${listing.title}"`,
+      listing: listing._id,
+    });
 
+    // ✅ Send confirmation email to guest
+    await sendEmail({
+      to: user.email,
+      subject: `📢 Booking Confirmed: ${listing.title}`,
+      html: `
+        <h2>Booking Confirmation</h2>
+        <p>Hi ${user.name},</p>
+        <p>Your booking for <strong>${listing.title}</strong> has been confirmed.</p>
+        <p><strong>Check-in:</strong> ${new Date(checkIn).toDateString()}</p>
+        <p><strong>Check-out:</strong> ${new Date(checkOut).toDateString()}</p>
+        <p><strong>Total Rent:</strong> ₹${totalRent}</p>
+        <p>📍 Location: ${listing.landmark}, ${listing.city}</p>
+        <br/>
+        <p>Thank you for booking with Wanderlust!</p>
+      `,
+    });
 
     return res.status(201).json({
       message: "Booking is created",
@@ -97,21 +94,22 @@ await createNotification({
   }
 };
 
-// ✅ CANCEL BOOKING with notification
+
 export const cancelBooking = async (req, res) => {
   try {
     const { id } = req.params;
     const currentUserId = req.userId;
 
-    const booking = await Booking.findById(id).populate("listing");
-    if (!booking) {
-      return res.status(404).json({ message: "Booking not found" });
-    }
+    const booking = await Booking.findById(id)
+      .populate("listing")
+      .populate("guest", "email name")
+      .populate("host", "email name");
+
+    if (!booking) return res.status(404).json({ message: "Booking not found" });
 
     const listingHostId = booking.listing.host?.toString();
-    const guestId = booking.guest?.toString();
+    const guestId = booking.guest?._id.toString();
 
-    // 🧠 Determine who is cancelling
     let cancelledBy = null;
     if (currentUserId === guestId) {
       cancelledBy = "guest";
@@ -121,19 +119,37 @@ export const cancelBooking = async (req, res) => {
       return res.status(403).json({ message: "Not authorized to cancel" });
     }
 
-    // ✅ Update status
     booking.status = "cancelled";
     booking.cancelledBy = cancelledBy;
     await booking.save();
 
-    // ✅ Notify guest
     const notifyRecipient = cancelledBy === "guest" ? listingHostId : guestId;
+
     await createNotification({
       recipient: notifyRecipient,
       sender: currentUserId,
       type: "cancellation",
       message: `Booking for ${booking.listing.title} was cancelled by ${cancelledBy}`,
       listing: booking.listing._id,
+    });
+
+    // ✅ Send cancellation email
+    const cancelledUser = cancelledBy === "guest" ? booking.guest : booking.host;
+    const receivingUser = cancelledBy === "guest" ? booking.host : booking.guest;
+
+    await sendEmail({
+      to: receivingUser.email,
+      subject: `❌ Booking Cancelled: ${booking.listing.title}`,
+      html: `
+        <h2>Booking Cancelled</h2>
+        <p>Hello ${receivingUser.name},</p>
+        <p>The booking for <strong>${booking.listing.title}</strong> has been cancelled by the ${cancelledBy}.</p>
+        <p><strong>Check-in:</strong> ${new Date(booking.checkIn).toDateString()}</p>
+        <p><strong>Check-out:</strong> ${new Date(booking.checkOut).toDateString()}</p>
+        <p>📍 Location: ${booking.listing.landmark}, ${booking.listing.city}</p>
+        <br/>
+        <p>Thanks for using Wanderlust!</p>
+      `,
     });
 
     return res.status(200).json({ message: `Booking cancelled by ${cancelledBy}` });
@@ -143,6 +159,7 @@ export const cancelBooking = async (req, res) => {
     return res.status(500).json({ message: "Booking cancel error" });
   }
 };
+
 
 
 // ✅ UPDATE STATUS TO 'DONE' AFTER CHECKOUT

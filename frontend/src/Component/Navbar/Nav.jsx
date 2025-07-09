@@ -1,4 +1,4 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
@@ -18,8 +18,9 @@ function Nav() {
   const navigate = useNavigate();
   const { serverUrl } = useContext(authDataContext);
   const { userData, setUserData } = useContext(userDataContext);
-  const { listingData, setListingData, setNewListData, newListData } =
+  const { listingData, setListingData, setNewListData, newListData, SearchData, handleSearch} =
     useContext(ListingDataContext);
+    const [input,setInput]= useState("")
 
   const handleLogout = async () => {
     try {
@@ -49,14 +50,20 @@ function Nav() {
     }
   };
 
+  useEffect(()=>{
+handleSearch()
+  },[])
+
   return (
     <div className="fixed top-0 bg-white z-50">
-      <MainNav
-        userData={userData}
-        navigate={navigate}
-        showpopup={showpopup}
-        setShowpopup={setShowpopup}
-      />
+    <MainNav
+  userData={userData}
+  navigate={navigate}
+  showpopup={showpopup}
+  setShowpopup={setShowpopup}
+  handleSearch={handleSearch} // ✅ required!
+/>
+
       {showpopup && (
         <DropdownMenu
           userData={userData}
@@ -65,7 +72,8 @@ function Nav() {
           setShowpopup={setShowpopup}
         />
       )}
-      <SearchBarMobile />
+    <SearchBarMobile handleSearch={handleSearch} />
+
       <CategoryBar cate={cate} handleCategory={handleCategory} />
     </div>
   );
