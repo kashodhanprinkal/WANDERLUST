@@ -2,8 +2,8 @@ import React, { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
-import { authDataContext } from '../context/AuthContext';
-import { userDataContext } from '../context/UserContext';
+import { authDataContext } from '../Context/AuthContext'
+import { userDataContext } from '../Context/UserContext';
 import MainNav from '../Component/Navbar/MainNav';
 
 
