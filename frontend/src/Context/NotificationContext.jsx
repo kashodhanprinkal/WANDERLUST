@@ -1,8 +1,8 @@
 import { createContext, useState, useEffect } from "react";
 import axios from "axios";
 
-// ✅ Ensure backend API is hit, not Vite dev server
-axios.defaults.baseURL = "http://localhost:8000";
+// ✅ Use deployed backend in production
+axios.defaults.baseURL = "https://your-backend-name.onrender.com";
 axios.defaults.withCredentials = true;
 
 export const NotificationContext = createContext();
@@ -22,8 +22,7 @@ export const NotificationProvider = ({ children }) => {
       }
 
       setNotifications(data);
-      const unread = data.filter((n) => !n.isRead).length;
-      setUnreadCount(unread);
+      setUnreadCount(data.filter((n) => !n.isRead).length);
     } catch (error) {
       console.error("❌ Error fetching notifications", error);
     } finally {
