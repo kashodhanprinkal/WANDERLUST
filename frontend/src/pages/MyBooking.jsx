@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { userDataContext } from '../Context/UserContext';
 import { authDataContext } from '../Context/AuthContext';
 import { ReviewContext } from '../Context/ReviewContext';
-import ReviewPopup from '../component/ReviewPopup';
+import ReviewPopup from '../Component/ReviewPopup';
 import ProfileModal from '../Component/ProfileModal';
 import axios from 'axios';
 import { toast } from 'react-toastify';
