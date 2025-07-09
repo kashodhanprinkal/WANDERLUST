@@ -5,7 +5,7 @@ import { userDataContext } from '../Context/UserContext';
 import { authDataContext } from '../Context/AuthContext';
 import { ReviewContext } from '../Context/ReviewContext';
 import ReviewPopup from '../component/ReviewPopup';
-import ProfileModal from '../component/ProfileModal';
+import ProfileModal from '../Component/ProfileModal';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
