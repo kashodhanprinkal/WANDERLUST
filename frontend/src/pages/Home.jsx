@@ -1,7 +1,7 @@
 import React, { useContext, useEffect } from 'react';
 import Nav from '../Component/Navbar/Nav.jsx';
 import { ListingDataContext } from '../Context/ListingContext.jsx';
-import { userDataContext } from '../context/UserContext';
+import { userDataContext } from '../Context/UserContext';
 import { useNavigate } from 'react-router-dom';
 import Card from '../Component/Card.jsx';
 import { FaPlaneDeparture } from "react-icons/fa";
