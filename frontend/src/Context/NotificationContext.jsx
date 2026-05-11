@@ -2,7 +2,7 @@ import { createContext, useState, useEffect } from "react";
 import axios from "axios";
 
 // ✅ Use deployed backend in production
-axios.defaults.baseURL = "https://your-backend-name.onrender.com";
+axios.defaults.baseURL = "https://wanderlust-backend-69cz.onrender.com";
 axios.defaults.withCredentials = true;
 
 export const NotificationContext = createContext();
