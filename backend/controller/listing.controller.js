@@ -13,11 +13,19 @@ export const addListing = async (req, res) => {
     const host = req.userId;
     const { title, description, rent, city, state, country, landmark, category } = req.body;
 
-    const fullAddress = `${landmark}, ${city}, ${state}, ${country}`;
-    const location = await getLatLngFromAddress(fullAddress);
-    if (!location) {
-      return res.status(400).json({ message: "Could not get geolocation from address" });
-    }
+   const fullAddress = `${landmark}, ${city}, ${state}, ${country}`;
+
+console.log("📍 FULL ADDRESS:", fullAddress);
+
+const location = await getLatLngFromAddress(fullAddress);
+
+console.log("🌍 GEOCODE RESULT:", location);
+
+if (!location) {
+  return res.status(400).json({
+    message: "Could not get geolocation from address",
+  });
+}
 
     const image1 = req.files?.image1?.[0] ? await uploadOnCloudinary(req.files.image1[0].path) : null;
     const image2 = req.files?.image2?.[0] ? await uploadOnCloudinary(req.files.image2[0].path) : null;

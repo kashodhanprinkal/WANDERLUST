@@ -59,23 +59,30 @@ const handleReset = () => {
   const { serverUrl } = useContext(authDataContext);
 
   // ✅ Add new listing using multipart/form-data
-  const handleAddListing = async () => {
+ const handleAddListing = async () => {
   try {
     setLoading(true);
     setError(null);
 
-    // 🔑 1. Ensure token exists
-    const token = localStorage.getItem("token");
-    if (!token) {
-      toast.error("Please login again");
+    // 🔍 Debug address (IMPORTANT)
+    console.log("📍 Address data:", {
+      landmark,
+      city,
+      state,
+      country,
+    });
+
+    // 🚨 Validate required fields
+    if (!title || !description || !rent || !landmark || !city || !state || !country) {
+      toast.error("Please fill all required fields");
       return;
     }
 
-    // 🧭 2. Geocode only if missing coordinates
+    // 🧭 Get coordinates if missing
     let finalLat = latitude;
     let finalLng = longitude;
 
-    if (!finalLat || !finalLng) {
+    if (finalLat == null || finalLng == null) {
       const fullAddress = `${landmark}, ${city}, ${state}, ${country}`;
 
       const response = await axios.post(
@@ -91,7 +98,7 @@ const handleReset = () => {
       setLongitude(finalLng);
     }
 
-    // 📦 3. Create FormData
+    // 📦 FormData
     const formData = new FormData();
 
     formData.append("title", title);
@@ -105,14 +112,14 @@ const handleReset = () => {
     formData.append("latitude", finalLat);
     formData.append("longitude", finalLng);
 
-    // 📸 4. Append images safely
+    // 📸 Images (safe append)
     if (backEndImage1) formData.append("image1", backEndImage1);
     if (backEndImage2) formData.append("image2", backEndImage2);
     if (backEndImage3) formData.append("image3", backEndImage3);
     if (backEndImage4) formData.append("image4", backEndImage4);
     if (backEndImage5) formData.append("image5", backEndImage5);
 
-    // 🚀 5. API CALL
+    // 🚀 API CALL (FIXED - NO AUTH HEADER)
     const { data } = await axios.post(
       `${serverUrl}/api/listing/add`,
       formData,
@@ -120,14 +127,12 @@ const handleReset = () => {
         withCredentials: true,
         headers: {
           "Content-Type": "multipart/form-data",
-          Authorization: `Bearer ${token}`,
         },
       }
     );
 
-    console.log("SUCCESS:", data);
+    console.log("✅ SUCCESS:", data);
 
-    // 🎉 success UI
     setAdding(true);
     toast.success("Listing created successfully!");
 
@@ -140,18 +145,18 @@ const handleReset = () => {
     return data;
 
   } catch (error) {
-    console.log("FULL ERROR:", error);
+    console.log("❌ FULL ERROR:", error);
 
     if (error.response) {
       console.log("STATUS:", error.response.status);
       console.log("DATA:", error.response.data);
-
       toast.error(error.response.data.message || "Failed to create listing");
     } else {
       toast.error("Server not responding");
     }
 
     setError(error.message);
+
   } finally {
     setLoading(false);
     setAdding(false);
