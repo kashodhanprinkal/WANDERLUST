@@ -206,18 +206,6 @@ WANDERLUST/
 
 ---
 
-## 📈 **Project Metrics** (For Your Resume)
-
-| Metric | Value |
-|--------|-------|
-| Lines of Code | ~8,500 (full stack) |
-| API Endpoints | 15+ REST routes |
-| Database Models | 3 (User, Listing, Booking) |
-| Components | 20+ React components |
-| User Flow | Auth → Browse → Book → Confirm |
-
----
-
 ## 👨‍💻 **Author**
 
 ### **Prinkal Kashodhan**
