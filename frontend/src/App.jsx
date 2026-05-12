@@ -1,25 +1,28 @@
-import React, { useContext } from 'react';
-import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
-import { ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-import 'leaflet/dist/leaflet.css';
+import React, { useContext } from "react";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import "leaflet/dist/leaflet.css";
 
-import { userDataContext } from './Context/UserContext';
-import PreLoader from './Component/PreLoader';
-import RouteChangeLoader from './Component/RouterLoader';
-import Footer from './Component/Footer'; // ✅ Import Footer
+import { userDataContext } from "./Context/UserContext";
+import PreLoader from "./Component/PreLoader";
+import RouteChangeLoader from "./Component/RouterLoader";
+import Footer from "./Component/Footer"; // ✅ Import Footer
 
-import Home from './pages/Home';
-import SignUp from './pages/SignUp';
-import Login from './pages/Login';
-import ListingPage1 from './pages/ListingPage1';
-import ListingPage2 from './pages/ListingPage2';
-import ListingPage3 from './pages/ListingPage3';
-import MyListing from './pages/MyListing';
-import ViewCard from './pages/ViewCard';
-import MyBooking from './pages/MyBooking';
-import ProfilePage from './pages/ProfilePage';
-import Notifications from './pages/Notifications';
+import Home from "./pages/Home";
+import SignUp from "./pages/SignUp";
+import Login from "./pages/Login";
+import ListingPage1 from "./pages/ListingPage1";
+import ListingPage2 from "./pages/ListingPage2";
+import ListingPage3 from "./pages/ListingPage3";
+import MyListing from "./pages/MyListing";
+import ViewCard from "./pages/ViewCard";
+import MyBooking from "./pages/MyBooking";
+import ProfilePage from "./pages/ProfilePage";
+import Notifications from "./pages/Notifications";
+import About from "./pages/About";
+import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
 
 function App() {
   const { userData } = useContext(userDataContext);
@@ -27,7 +30,7 @@ function App() {
 
   if (userData === undefined) return <PreLoader />;
 
-  const hideFooterOnPaths = ['/login', '/signup'];
+  const hideFooterOnPaths = ["/login", "/signup"];
   const shouldShowFooter = !hideFooterOnPaths.includes(location.pathname);
 
   return (
@@ -42,30 +45,46 @@ function App() {
             <Route path="/signup" element={<SignUp />} />
             <Route
               path="/listingpage1"
-              element={userData ? <ListingPage1 /> : <Navigate to="/login" replace />}
+              element={
+                userData ? <ListingPage1 /> : <Navigate to="/login" replace />
+              }
             />
             <Route
               path="/listingpage2"
-              element={userData ? <ListingPage2 /> : <Navigate to="/login" replace />}
+              element={
+                userData ? <ListingPage2 /> : <Navigate to="/login" replace />
+              }
             />
             <Route
               path="/listingpage3"
-              element={userData ? <ListingPage3 /> : <Navigate to="/login" replace />}
+              element={
+                userData ? <ListingPage3 /> : <Navigate to="/login" replace />
+              }
             />
             <Route
               path="/mylisting"
-              element={userData ? <MyListing /> : <Navigate to="/login" replace />}
+              element={
+                userData ? <MyListing /> : <Navigate to="/login" replace />
+              }
             />
             <Route
               path="/viewcard"
-              element={userData ? <ViewCard /> : <Navigate to="/login" replace />}
+              element={
+                userData ? <ViewCard /> : <Navigate to="/login" replace />
+              }
             />
             <Route
               path="/mybooking"
-              element={userData ? <MyBooking /> : <Navigate to="/login" replace />}
+              element={
+                userData ? <MyBooking /> : <Navigate to="/login" replace />
+              }
             />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/notifications" element={<Notifications />} />
+
+            <Route path="/about" element={<About />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/terms" element={<Terms />} />
           </Routes>
         </div>
 
