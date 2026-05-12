@@ -22,7 +22,10 @@ const port = process.env.PORT || 6000;
 app.use(express.json());
 app.use(cookieParser());
 app.use(cors({
-  origin: "https://wanderlust-miim.onrender.com", // your frontend Render URL
+  origin: [
+    "http://localhost:5173",
+    "https://wanderlust-miim.onrender.com"
+  ],
   credentials: true
 }));
 

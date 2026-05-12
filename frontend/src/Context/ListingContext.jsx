@@ -60,71 +60,103 @@ const handleReset = () => {
 
   // ✅ Add new listing using multipart/form-data
   const handleAddListing = async () => {
-    try {
-      setLoading(true);
-      setError(null);
+  try {
+    setLoading(true);
+    setError(null);
 
-      // 🧭 Geocode if no coordinates present
-      let finalLat = latitude;
-      let finalLng = longitude;
-      if (!latitude || !longitude) {
-        const fullAddress = `${landmark}, ${city}, ${state}, ${country}`;
-        const response = await axios.post(`${serverUrl}/api/geocode`, { address: fullAddress }, { withCredentials: true });
-        finalLat = response.data.latitude;
-        finalLng = response.data.longitude;
-        setLatitude(finalLat);
-        setLongitude(finalLng);
-      }
+    // 🔑 1. Ensure token exists
+    const token = localStorage.getItem("token");
+    if (!token) {
+      toast.error("Please login again");
+      return;
+    }
 
-      // 🧾 Construct form data for multipart submission
-      const formData = new FormData();
-      formData.append("title", title);
-      formData.append("description", description);
-      formData.append("rent", rent);
-      formData.append("category", category);
-      formData.append("landmark", landmark);
-      formData.append("city", city);
-      formData.append("state", state);
-      formData.append("country", country);
-      formData.append("latitude", finalLat);
-      formData.append("longitude", finalLng);
+    // 🧭 2. Geocode only if missing coordinates
+    let finalLat = latitude;
+    let finalLng = longitude;
 
-      // ✅ Required fields (5 images)
-      formData.append("image1", backEndImage1);
-      formData.append("image2", backEndImage2);
-      formData.append("image3", backEndImage3);
-      formData.append("image4", backEndImage4);
-      formData.append("image5", backEndImage5);
+    if (!finalLat || !finalLng) {
+      const fullAddress = `${landmark}, ${city}, ${state}, ${country}`;
 
-      const { data } = await axios.post(`${serverUrl}/api/listing/add`, formData, {
+      const response = await axios.post(
+        `${serverUrl}/api/geocode`,
+        { address: fullAddress },
+        { withCredentials: true }
+      );
+
+      finalLat = response.data.latitude;
+      finalLng = response.data.longitude;
+
+      setLatitude(finalLat);
+      setLongitude(finalLng);
+    }
+
+    // 📦 3. Create FormData
+    const formData = new FormData();
+
+    formData.append("title", title);
+    formData.append("description", description);
+    formData.append("rent", rent);
+    formData.append("category", category);
+    formData.append("landmark", landmark);
+    formData.append("city", city);
+    formData.append("state", state);
+    formData.append("country", country);
+    formData.append("latitude", finalLat);
+    formData.append("longitude", finalLng);
+
+    // 📸 4. Append images safely
+    if (backEndImage1) formData.append("image1", backEndImage1);
+    if (backEndImage2) formData.append("image2", backEndImage2);
+    if (backEndImage3) formData.append("image3", backEndImage3);
+    if (backEndImage4) formData.append("image4", backEndImage4);
+    if (backEndImage5) formData.append("image5", backEndImage5);
+
+    // 🚀 5. API CALL
+    const { data } = await axios.post(
+      `${serverUrl}/api/listing/add`,
+      formData,
+      {
         withCredentials: true,
         headers: {
-          "Content-Type": "multipart/form-data"
-        }
-      });
+          "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
 
-      // Success
-  // ✅ Show toast and redirect
-setAdding(prev => !prev);
-toast.success("Listing created successfully! Redirecting to My Listings...");
+    console.log("SUCCESS:", data);
 
-setTimeout(() => {
-  navigate("/mylisting");
-}, 2000); // 2 second delay
+    // 🎉 success UI
+    setAdding(true);
+    toast.success("Listing created successfully!");
 
-resetForm();
-return data;
+    setTimeout(() => {
+      navigate("/mylisting");
+    }, 1500);
 
+    resetForm();
 
-    } catch (error) {
-      console.error("Listing creation failed:", error);
-      const msg = error.response?.data?.message || error.message || "Failed to add listing";
-      setError(msg);
-      throw error;
-    } finally {
-      setLoading(false);
+    return data;
+
+  } catch (error) {
+    console.log("FULL ERROR:", error);
+
+    if (error.response) {
+      console.log("STATUS:", error.response.status);
+      console.log("DATA:", error.response.data);
+
+      toast.error(error.response.data.message || "Failed to create listing");
+    } else {
+      toast.error("Server not responding");
     }
-  };
+
+    setError(error.message);
+  } finally {
+    setLoading(false);
+    setAdding(false);
+  }
+};
 
   // ✅ Reset form and images
   const resetForm = () => {
