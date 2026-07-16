@@ -148,8 +148,13 @@ return (
 
     <div className="min-h-screen py-10 px-4 flex justify-center">
       <div className="max-w-3xl w-full bg-white shadow-md rounded-lg p-6 md:p-8">
-        <h1 className="text-2xl md:text-3xl font-semibold mb-6 text-center text-gray-800">👤 Complete Your Profile</h1>
+<h1 className="text-2xl md:text-3xl font-semibold mb-2 text-center text-gray-800">
+  👤 Complete Your Profile
+</h1>
 
+<p className="text-center text-gray-500 mb-6">
+  You can skip this step and complete your profile later.
+</p>
         {/* ✅ Show only if completion < 100% */}
         {calculateCompletion() < 100 && (
           <div className="mb-6">
@@ -253,14 +258,28 @@ return (
             </div>
           </div>
 
-          {/* Submit Button */}
-          <button
-            type="submit"
-            disabled={isLoading}
-            className={`w-full bg-red-600 text-white py-2 rounded-md hover:bg-red-700 transition duration-200 ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
-          >
-            {isLoading ? 'Saving...' : 'Save Profile'}
-          </button>
+         <div className="flex flex-col sm:flex-row gap-3">
+  <button
+    type="button"
+    onClick={() => {
+      toast.info("You can complete your profile anytime.");
+      navigate("/");
+    }}
+    className="w-full sm:w-1/2 border border-gray-300 text-gray-700 py-2 rounded-md hover:bg-gray-100 transition"
+  >
+    Skip for Now
+  </button>
+
+  <button
+    type="submit"
+    disabled={isLoading}
+    className={`w-full sm:w-1/2 bg-red-600 text-white py-2 rounded-md hover:bg-red-700 transition duration-200 ${
+      isLoading ? "opacity-70 cursor-not-allowed" : ""
+    }`}
+  >
+    {isLoading ? "Saving..." : "Save Profile"}
+  </button>
+</div>
         </form>
       </div>
     </div>

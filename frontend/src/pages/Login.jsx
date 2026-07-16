@@ -3,7 +3,7 @@ import { IoMdEye, IoMdEyeOff } from "react-icons/io";
 import { useNavigate } from "react-router-dom";
 import { FaArrowLeft } from "react-icons/fa";
 import axios from "axios";
-
+import toast from "react-hot-toast";
 import { authDataContext } from "../Context/AuthContext";
 import { userDataContext } from "../Context/UserContext";
 
@@ -17,36 +17,42 @@ function Login() {
   let { loading,setLoading} = useContext(authDataContext)
 
   const handleLogin = async (e) => {
-    setLoading(true)
-    e.preventDefault();
+  e.preventDefault();
+  setLoading(true);
 
-    // Validation
-    if (!email || !password) {
-      console.log("Please fill all fields");
-      return;
-    }
+  // Validation
+  if (!email || !password) {
+    toast.error("Please fill all fields");
+    setLoading(false);
+    return;
+  }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      console.log("Invalid email format");
-      return;
-    }
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-    try {
-      const result = await axios.post(
-        serverUrl + "/api/auth/login",
-        { email, password },
-        { withCredentials: true }
-      );
-setLoading(false)
-      setUserData(result.data);
-      console.log("Login successful:", result.data);
-      navigate("/");
-    } catch (error) {
-      setLoading(false)
-      console.log("Login failed:", error.response?.data || error.message);
-    }
-  };
+  if (!emailRegex.test(email)) {
+    toast.error("Invalid email format");
+    setLoading(false);
+    return;
+  }
+
+  try {
+    const result = await axios.post(
+      serverUrl + "/api/auth/login",
+      { email, password },
+      { withCredentials: true }
+    );
+
+    setUserData(result.data);
+
+    toast.success("Login Successful");
+
+    navigate("/");
+  } catch (error) {
+    toast.error(error.response?.data?.message || "Login Failed");
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="w-[100vw] h-[100vh] flex items-center justify-center relative">

@@ -4,7 +4,7 @@ import { IoMdEyeOff } from "react-icons/io";
 import { useNavigate } from "react-router-dom";
 import { FaArrowLeft } from "react-icons/fa";
 import axios from "axios";
-
+import toast from "react-hot-toast";
 import { authDataContext } from "../Context/AuthContext";
 import { userDataContext } from "../Context/UserContext";
 
@@ -17,53 +17,58 @@ function SignUp() {
   let [email, setEmail] = useState("");
   let [password, setPassword] = useState("");
   let {loading, setLoading} = useContext(authDataContext)
-  const handleSignUp = async (e) => {
-    setLoading(true)
-    e.preventDefault();
-
-    // Basic validation for input fields
-    if (!name || !email || !password) {
-      console.log("Please fill all fields");
-      return;
-    }
-
-    // Basic email format validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      console.log("Invalid email format");
-      return;
-    }
-
-    try {
-      // Send sign-up request to server
-      const result = await axios.post(
-        serverUrl + "/api/auth/signup",
-        {
-          name,
-          email,
-          password,
-        },
-        { withCredentials: true }
-      );
-setLoading(false)
-      // Save user data to context
-      setUserData(result.data);
-
-      // Redirect to home page on successful signup
-      // inside signup success:
-navigate("/profile"); // ✅ send them to profile
 
 
-      console.log("Sign-up successful:", result.data);
-    } catch (error) {
-      // Handle errors (e.g., validation errors from the server)
-      console.log("Error during sign-up:", error.response?.data || error);
-    }
-  };
+ const handleSignUp = async (e) => {
+  e.preventDefault();
+  setLoading(true);
 
+  // Check empty fields
+  if (!name || !email || !password) {
+    toast.error("Please fill all fields");
+    setLoading(false);
+    return;
+  }
 
+  // Validate email
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+  if (!emailRegex.test(email)) {
+    toast.error("Please enter a valid email");
+    setLoading(false);
+    return;
+  }
 
+  try {
+    const result = await axios.post(
+      `${serverUrl}/api/auth/signup`,
+      {
+        name,
+        email,
+        password,
+      },
+      {
+        withCredentials: true,
+      }
+    );
+
+    // Save user in context
+    setUserData(result.data);
+
+    // Success message
+    toast.success("🎉 Account created successfully!");
+
+    // Redirect to Home
+    navigate("/");
+
+  } catch (error) {
+    toast.error(
+      error.response?.data?.message || "Signup failed. Please try again."
+    );
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="w-[100vw] h-[100vh] flex items-center justify-center relative">
